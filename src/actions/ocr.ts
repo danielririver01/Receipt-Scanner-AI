@@ -2,8 +2,8 @@
 
 import { auth } from '@clerk/nextjs/server';
 import cloudinary from '@/lib/cloudinary';
-import openai from '@/lib/openai';
 import prisma from '@/lib/prisma';
+import Tesseract from 'tesseract.js';
 
 export async function processReceipt(formData: FormData) {
   const { userId } = await auth();
@@ -25,7 +25,10 @@ export async function processReceipt(formData: FormData) {
 
   const imageUrl = uploadResponse.secure_url;
 
-  // 2. OCR and Analysis with OpenAI Vision
+  // 2. Step 1: Extract Raw Text with Tesseract.js
+  const { data: { text } } = await Tesseract.recognize(imageUrl, 'spa+eng');
+
+  // 3. Step 2: Structure Data with DeepSeek-V3
   const categories = await prisma.category.findMany({
     where: { userId },
     select: { name: true }
@@ -33,41 +36,51 @@ export async function processReceipt(formData: FormData) {
 
   const categoryNames = categories.map(c => c.name).join(', ');
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert receipt analyzer. Extract the following information from the receipt image in JSON format:
-        - amount: number (total amount)
-        - merchant: string (name of the store or company)
-        - date: string (ISO format or YYYY-MM-DD)
-        - category: string (must be one of the following: ${categoryNames} or "Other" if none match)
-        - description: string (brief description of what was bought)
-        - ocrText: string (full text extracted from receipt)
+  const deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: [
+        {
+          role: "system",
+          content: `Eres un experto en extracción de datos de recibos y facturas.
+          Tu tarea es tomar el texto extraído por un OCR (que puede tener errores o estar desordenado) y convertirlo en un objeto JSON estructurado.
 
-        Only return the JSON object.`
-      },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Analyze this receipt:" },
-          {
-            type: "image_url",
-            image_url: {
-              "url": imageUrl,
-            },
-          },
-        ],
-      },
-    ],
-    response_format: { type: "json_object" }
+          El JSON debe tener exactamente estos campos:
+          - amount: number (monto total del ticket)
+          - merchant: string (nombre del comercio o empresa)
+          - date: string (fecha en formato ISO YYYY-MM-DD o similar)
+          - category: string (debe ser una de estas: ${categoryNames || 'Otros'}. Si no encaja en ninguna, usa "Otros")
+          - description: string (una breve descripción de lo comprado o el nombre del comercio)
+          - ocrText: string (el texto original que recibiste)
+
+          Responde ÚNICAMENTE con el objeto JSON.`
+        },
+        {
+          role: "user",
+          content: text
+        }
+      ],
+      response_format: { type: "json_object" }
+    })
   });
 
-  const result = JSON.parse(response.choices[0].message.content || '{}');
+  if (!deepseekResponse.ok) {
+    const errorData = await deepseekResponse.text();
+    console.error('DeepSeek API Error:', errorData);
+    throw new Error('Failed to process data with DeepSeek');
+  }
+
+  const deepseekResult = await deepseekResponse.json();
+  const structuredData = JSON.parse(deepseekResult.choices[0].message.content || '{}');
 
   return {
-    ...result,
+    ...structuredData,
+    ocrText: text, // Use the actual Tesseract text
     imageUrl
   };
 }
