@@ -15,7 +15,7 @@ export async function GET() {
   });
 
   const headers = ["Fecha", "Comercio/Descripción", "Monto", "Categoría"];
-  const rows = expenses.map((e: any) => [
+  const rows = expenses.map((e) => [
     e.date.toISOString().split('T')[0],
     `"${(e.description || '').replace(/"/g, '""')}"`,
     e.amount.toString(),
