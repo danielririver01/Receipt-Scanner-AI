@@ -82,7 +82,7 @@ export async function processReceipt(formData: FormData) {
       select: { name: true }
     });
 
-    const categoryNames = categories.map(c => c.name).join(', ');
+    const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
     const deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",

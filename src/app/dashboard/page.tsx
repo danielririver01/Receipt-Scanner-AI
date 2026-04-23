@@ -1,154 +1,153 @@
-import prisma from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
-import ReceiptScanner from "@/components/ReceiptScanner";
-import Link from "next/link";
-import { AlertCircle, ArrowRight, Download, Settings } from "lucide-react";
+import Link from 'next/link';
+import { auth } from '@clerk/nextjs/server';
+import { SignInButton, SignUpButton } from '@clerk/nextjs';
 
-export default async function DashboardPage() {
+export default async function LandingPage() {
   const { userId } = await auth();
-  if (!userId) return null;
-
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-
-  // Get categories with their budgets for the current month
-  const categories = await prisma.category.findMany({
-    where: { userId },
-    include: {
-      budget: {
-        where: { month: currentMonth, year: currentYear },
-      },
-      expenses: {
-        where: {
-          date: {
-            gte: new Date(currentYear, currentMonth - 1, 1),
-            lt: new Date(currentYear, currentMonth, 1),
-          },
-        },
-      },
-    },
-  });
-
-  const summary = categories.map((cat) => {
-    const totalSpent = cat.expenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const budgetAmount = cat.budget[0]?.amount || 0;
-    const percent = budgetAmount > 0 ? (totalSpent / budgetAmount) * 100 : 0;
-
-    let color = "bg-green-500";
-    if (percent >= 90) color = "bg-red-500";
-    else if (percent >= 80) color = "bg-yellow-500";
-
-    return {
-      id: cat.id,
-      name: cat.name,
-      totalSpent,
-      budgetAmount,
-      percent,
-      color,
-    };
-  });
-
-  const totalSpentMonth = summary.reduce((sum, s) => sum + s.totalSpent, 0);
-  const totalBudgetMonth = summary.reduce((sum, s) => sum + s.budgetAmount, 0);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard de Gastos</h1>
-        <div className="flex gap-4">
-          <Link
-            href="/api/export"
-            className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50 text-slate-700"
-          >
-            <Download className="w-4 h-4" />
-            Exportar CSV
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-orange-500/30">
+      {/* Header / Navbar */}
+      <header className="sticky top-0 w-full bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 z-50">
+        <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          {/* Logo a la Izquierda */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center font-bold text-black text-xl group-hover:scale-110 transition-transform duration-300">V</div>
+            <span className="text-2xl font-bold tracking-tighter text-white">VELZIA</span>
           </Link>
-          <Link
-            href="/dashboard/categories"
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-700"
-          >
-            <Settings className="w-4 h-4" />
-            Configurar
-          </Link>
-        </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm font-medium text-gray-500 uppercase">Gasto Total Mes</p>
-          <p className="text-2xl font-bold text-slate-900">${totalSpentMonth.toFixed(2)}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm font-medium text-gray-500 uppercase">Presupuesto Total</p>
-          <p className="text-2xl font-bold text-slate-900">${totalBudgetMonth.toFixed(2)}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm font-medium text-gray-500 uppercase">Categorías en Alerta</p>
-          <p className="text-2xl font-bold text-red-600">
-            {summary.filter(s => s.percent >= 80).length}
-          </p>
-        </div>
-      </div>
+          {/* Enlaces en el Centro (Ocultos en móvil) */}
+          <div className="hidden md:flex items-center gap-10">
+            <a href="#features" className="nav-link text-sm font-medium">Productos</a>
+            <a href="#pricing" className="nav-link text-sm font-medium">Precios</a>
+            <a href="#company" className="nav-link text-sm font-medium">Empresa</a>
+          </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section>
-          <ReceiptScanner />
-        </section>
-
-        <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-bold mb-6 text-slate-900">Estado de Presupuestos</h2>
-          <div className="space-y-6">
-            {summary.map((s) => (
-              <div key={s.id}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="font-semibold text-slate-700">{s.name}</span>
-                  <span className="text-gray-500">
-                    ${s.totalSpent.toFixed(2)} / ${s.budgetAmount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div
-                    className={`${s.color} h-3 rounded-full transition-all duration-500`}
-                    style={{ width: `${Math.min(s.percent, 100)}%` }}
-                  ></div>
-                </div>
-                {s.percent >= 90 && (
-                  <p className="text-red-600 text-xs mt-1 flex items-center gap-1 font-medium">
-                    <AlertCircle className="w-3 h-3" />
-                    ¡Crítico! Has superado el 90% del presupuesto.
-                  </p>
-                )}
-                {s.percent >= 80 && s.percent < 90 && (
-                  <p className="text-yellow-600 text-xs mt-1 flex items-center gap-1 font-medium">
-                    <AlertCircle className="w-3 h-3" />
-                    Atención: Estás cerca del límite (80%+).
-                  </p>
-                )}
-              </div>
-            ))}
-            {summary.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4 text-slate-500">No tienes presupuestos configurados.</p>
-                <Link href="/dashboard/categories" className="text-blue-600 hover:underline flex items-center justify-center gap-1">
-                  Configurar categorías <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
+          {/* Acciones a la Derecha */}
+          <div className="flex items-center gap-6">
+            {userId ? (
+              <Link href="/dashboard" className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-orange-500 hover:text-white transition-all duration-300">
+                Ir al Dashboard
+              </Link>
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <button className="hidden sm:block nav-link text-sm font-medium cursor-pointer">
+                    Iniciar sesión
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-orange-500 hover:text-white transition-all duration-300">
+                    Comienza gratis
+                  </button>
+                </SignUpButton>
+              </>
             )}
+
+            {/* Botón de Menú Móvil (Solo visible en pantallas pequeñas) */}
+            <button className="md:hidden text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+              </svg>
+            </button>
+          </div>
+        </nav>
+      </header>
+
+      <main>
+        {/* Hero / Header Section */}
+        <section className="max-w-7xl mx-auto px-6 py-24 text-center">
+          <h1 className="text-5xl md:text-7xl font-bold mb-8 tracking-tight">
+            Gestión de nivel <span className="accent-text">Superior.</span>
+          </h1>
+          <p className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed font-light">
+            Todo el poder de Velzia en una interfaz minimalista diseñada para restauranteros que valoran la eficiencia y el control absoluto.
+          </p>
+        </section>
+
+        {/* Features Grid */}
+        <section id="features" className="max-w-7xl mx-auto px-6 pb-32">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            {/* Feature 1: Extracción */}
+            <div className="obsidian-card rounded-[2rem] p-10 flex flex-col group">
+              <div className="glass-container rounded-2xl w-full aspect-square mb-8 flex items-center justify-center relative overflow-hidden">
+                <div className="w-20 h-28 bg-white/5 border border-white/10 rounded flex flex-col p-4 gap-2 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                  <div className="w-full h-1 bg-white/20 rounded"></div>
+                  <div className="w-3/4 h-1 bg-white/20 rounded"></div>
+                  <div className="w-full h-1 bg-white/20 rounded"></div>
+                  <div className="mt-auto w-1/2 h-4 bg-orange-500/20 rounded border border-orange-500/30"></div>
+                </div>
+                <div className="scan-line"></div>
+              </div>
+              <h3 className="text-2xl font-bold mb-4 tracking-tight">Extracción Digital</h3>
+              <p className="text-gray-400 leading-relaxed text-sm">
+                Sincroniza tus facturas físicamente con un solo clic. Nuestra tecnología procesa montos y datos con precisión milimétrica.
+              </p>
+            </div>
+
+            {/* Feature 2: Dashboard */}
+            <div className="obsidian-card rounded-[2rem] p-10 flex flex-col group">
+              <div className="glass-container rounded-2xl w-full aspect-square mb-8 flex items-center justify-center relative">
+                <svg className="w-3/4 h-3/4" viewBox="0 0 100 60">
+                  <path d="M0,50 C20,45 40,20 60,35 T100,10" fill="none" stroke="#f97316" strokeWidth="2.5" className="glow-icon" />
+                  <circle cx="100" cy="10" r="3" fill="#ffffff" />
+                  <line x1="0" y1="55" x2="100" y2="55" stroke="white" strokeOpacity="0.1" strokeDasharray="2 2" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold mb-4 tracking-tight">Dashboard Obsidian</h3>
+              <p className="text-gray-400 leading-relaxed text-sm">
+                Visualiza el flujo de caja y las métricas críticas de tu negocio en un panel oscuro, elegante y libre de distracciones.
+              </p>
+            </div>
+
+            {/* Feature 3: Sync */}
+            <div className="obsidian-card rounded-[2rem] p-10 flex flex-col group">
+              <div className="glass-container rounded-2xl w-full aspect-square mb-8 flex items-center justify-center">
+                <div className="relative flex items-center justify-center">
+                  <div className="w-16 h-24 border-2 border-white/10 rounded-lg bg-white/5"></div>
+                  <div className="w-8 h-14 border-2 border-orange-500/30 rounded-md bg-orange-500/5 absolute -bottom-2 -right-4 backdrop-blur-sm"></div>
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold mb-4 tracking-tight">Sincronización Total</h3>
+              <p className="text-gray-400 leading-relaxed text-sm">
+                Accede a tu información desde cualquier lugar. Tu inventario, ventas y gastos siempre actualizados en todos tus dispositivos.
+              </p>
+            </div>
+
+          </div>
+
+          {/* Call to Action */}
+          <div id="pricing" className="mt-20 text-center">
+            {userId ? (
+              <Link href="/dashboard" className="btn-primary px-12 py-5 rounded-full font-bold text-lg inline-block">
+                Ir al Dashboard
+              </Link>
+            ) : (
+              <SignUpButton mode="modal">
+                <button className="btn-primary px-12 py-5 rounded-full font-bold text-lg">
+                  Probar Velzia Gratis
+                </button>
+              </SignUpButton>
+            )}
+            <p className="mt-6 text-gray-600 text-sm">Empieza hoy. Sin complicaciones. Sin rodeos.</p>
           </div>
         </section>
-      </div>
-      <footer className="mt-12 pt-8 border-t border-gray-100/50">
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="material-symbols-outlined text-sm">gavel</span>
-            <p className="text-[11px] text-center max-w-2xl leading-relaxed italic">
-              "Velzia IA procesa datos con inteligencia artificial para apoyarte. Recuerda que la IA puede cometer errores; verifica siempre la información crítica para tu negocio."
-            </p>
+      </main>
+
+      <footer id="company" className="border-t border-white/5 py-12">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center font-bold text-black text-xs">V</div>
+            <span className="text-lg font-bold tracking-tighter text-white uppercase">Velzia</span>
           </div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mt-2">
-            Velzia AI Ecosystem — Protección de Datos & Seguridad
+          <p className="text-gray-500 text-sm">
+            © 2024 VELZIA. Todos los derechos reservados.
           </p>
+          <div className="flex gap-6">
+            <a href="#" className="text-gray-500 hover:text-white transition-colors text-sm">Términos</a>
+            <a href="#" className="text-gray-500 hover:text-white transition-colors text-sm">Privacidad</a>
+          </div>
         </div>
       </footer>
     </div>
