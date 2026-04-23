@@ -26,11 +26,11 @@ export default function ReceiptScanner() {
 
     setLoading(true);
     setScanning(true);
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const data = await processReceipt(formData) as OCRResult;
       setResult(data);
     } catch (error) {
@@ -135,7 +135,7 @@ export default function ReceiptScanner() {
               />
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={handleSave}

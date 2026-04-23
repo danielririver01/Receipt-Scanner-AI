@@ -57,7 +57,7 @@ export default async function CategoriesPage() {
                     <button className="text-red-600 hover:text-red-800 text-sm">Eliminar</button>
                   </form>
                 </div>
-                
+
                 <form action={async (formData) => {
                   'use server';
                   const amount = parseFloat(formData.get('amount') as string);

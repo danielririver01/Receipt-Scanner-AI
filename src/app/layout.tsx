@@ -14,7 +14,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-
 export const metadata: Metadata = {
   title: "Expense Tracker OCR",
   description: "Track your expenses using OCR and AI",
@@ -28,6 +27,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html
+<<<<<<< HEAD
         lang="es"
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       >
@@ -35,6 +35,12 @@ export default function RootLayout({
           {children}
           <TokenBubble />
         </body>
+=======
+        lang="en"
+        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col">{children}</body>
+>>>>>>> 96c12a8f087be211c962412e59eacc11e14bb0c7
       </html>
     </ClerkProvider>
   );

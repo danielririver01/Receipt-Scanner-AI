@@ -41,8 +41,8 @@ export default async function LandingPage() {
           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-10">
             Escanea tus tickets, categoriza automáticamente tus gastos y mantén tu presupuesto bajo control sin esfuerzo manual.
           </p>
-          <Link 
-            href={userId ? "/dashboard" : "/sign-up"} 
+          <Link
+            href={userId ? "/dashboard" : "/sign-up"}
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200"
           >
             Empezar Gratis <ArrowRight className="w-5 h-5" />

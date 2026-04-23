@@ -34,7 +34,7 @@ export default async function DashboardPage() {
     const totalSpent = cat.expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const budgetAmount = cat.budget[0]?.amount || 0;
     const percent = budgetAmount > 0 ? (totalSpent / budgetAmount) * 100 : 0;
-    
+
     let color = "bg-green-500";
     if (percent >= 90) color = "bg-red-500";
     else if (percent >= 80) color = "bg-yellow-500";

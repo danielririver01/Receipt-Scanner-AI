@@ -63,7 +63,7 @@ export async function processReceipt(formData: FormData) {
     // 2. Upload to Cloudinary
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     const uploadResponse = await new Promise<{ secure_url: string }>((resolve, reject) => {
       cloudinary.uploader.upload_stream({ folder: 'receipts' }, (error, result) => {
         if (error || !result) reject(error || new Error('Upload failed'));
