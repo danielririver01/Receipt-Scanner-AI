@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { processReceipt } from '@/actions/ocr';
 import { saveExpense } from '@/actions/expenses';
-import { Loader2, Upload, Check } from 'lucide-react';
+import { Loader2, Upload, Check, X, Camera } from 'lucide-react';
 
 interface OCRResult {
   amount: number;
@@ -65,17 +65,21 @@ export default function ReceiptScanner() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md text-slate-900">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <Upload className="w-5 h-5" />
-        Escanear Ticket
-      </h2>
-
+    <div className="obsidian-card rounded-3xl p-6 md:p-8 overflow-hidden relative group transition-all duration-500 hover:border-orange-500/20">
       {!result ? (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+        <div className="text-center space-y-6">
+          <div className="glass-container w-24 h-24 mx-auto rounded-[2rem] flex items-center justify-center text-orange-500 shadow-xl shadow-orange-500/10 group-hover:scale-110 transition-transform duration-500">
+            <Camera className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold tracking-tight">Capturar Ticket</h3>
+            <p className="text-gray-500 text-sm max-w-[200px] mx-auto">Sube una foto de tu factura para extraer los datos automáticamente.</p>
+          </div>
+
           <input
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={handleUpload}
             className="hidden"
             id="receipt-upload"
@@ -83,76 +87,84 @@ export default function ReceiptScanner() {
           />
           <label
             htmlFor="receipt-upload"
-            className={`cursor-pointer inline-flex flex-col items-center ${loading ? 'opacity-50' : ''}`}
+            className={`cursor-pointer inline-flex items-center justify-center w-full bg-white text-black font-bold py-4 rounded-2xl transition-all duration-300 hover:bg-orange-500 hover:text-white active:scale-95 ${loading ? 'opacity-50 pointer-events-none' : ''}`}
           >
             {loading ? (
-              <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
-              <Upload className="w-12 h-12 text-gray-400" />
+              <span className="flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                {scanning ? 'Procesando...' : 'Seleccionar Imagen'}
+              </span>
             )}
-            <span className="mt-2 text-sm font-medium text-gray-600">
-              {scanning ? 'Analizando con IA...' : 'Haz clic para subir o arrastra una imagen'}
-            </span>
           </label>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Comercio</label>
+        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold">Datos Extraídos</h3>
+            <button onClick={() => setResult(null)} className="text-gray-500 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Establecimiento</label>
               <input
                 type="text"
                 value={result.merchant}
                 onChange={(e) => setResult({ ...result, merchant: e.target.value })}
-                className="mt-1 block w-full border rounded-md px-3 py-2"
+                className="w-full glass-container bg-transparent rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Monto</label>
-              <input
-                type="number"
-                value={result.amount}
-                onChange={(e) => setResult({ ...result, amount: parseFloat(e.target.value) })}
-                className="mt-1 block w-full border rounded-md px-3 py-2"
-              />
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Monto Total</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  value={result.amount}
+                  onChange={(e) => setResult({ ...result, amount: parseFloat(e.target.value) })}
+                  className="w-full glass-container bg-transparent rounded-xl pl-8 pr-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Categoría</label>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Categoría</label>
               <input
                 type="text"
                 value={result.category}
                 onChange={(e) => setResult({ ...result, category: e.target.value })}
-                className="mt-1 block w-full border rounded-md px-3 py-2"
+                className="w-full glass-container bg-transparent rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Fecha</label>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Fecha</label>
               <input
                 type="date"
                 value={result.date?.split('T')[0]}
                 onChange={(e) => setResult({ ...result, date: e.target.value })}
-                className="mt-1 block w-full border rounded-md px-3 py-2"
+                className="w-full glass-container bg-transparent rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors [color-scheme:dark]"
               />
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Confirmar y Guardar
-            </button>
-            <button
-              onClick={() => setResult(null)}
-              disabled={loading}
-              className="px-4 py-2 border rounded-md hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
-          </div>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="w-full bg-orange-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 active:scale-95 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+            Confirmar Gasto
+          </button>
+        </div>
+      )}
+
+      {/* Scan Line Animation during loading */}
+      {scanning && (
+        <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-3xl">
+          <div className="scan-line"></div>
         </div>
       )}
     </div>
