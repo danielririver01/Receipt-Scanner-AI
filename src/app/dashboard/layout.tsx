@@ -22,7 +22,7 @@ export default function DashboardLayout({
                         className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-gray-400 hover:text-white"
                     >
                         <LayoutDashboard className="w-5 h-5" />
-                        <span className="font-medium">Dashboard</span>
+                        <span className="font-medium">Inicio</span>
                     </Link>
                     <Link
                         href="/dashboard/categories"
@@ -70,7 +70,7 @@ export default function DashboardLayout({
                 </div>
                 <Link href="/dashboard/categories" className="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
                     <Tag className="w-6 h-6" />
-                    <span className="text-[10px] uppercase font-bold tracking-widest">Límites</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest">Categorías</span>
                 </Link>
             </nav>
         </div>

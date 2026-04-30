@@ -5,6 +5,8 @@ import { useAuth } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Diamond, Zap, ExternalLink } from 'lucide-react';
 
+import TokenRechargeModal from './TokenRechargeModal';
+
 const VELZIA_API = process.env.NEXT_PUBLIC_VELZIA_API_URL || 'http://localhost:5000';
 
 interface TokenStatus {
@@ -19,6 +21,8 @@ export default function TokenBubble() {
   const [status, setStatus] = useState<TokenStatus | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     if (!isSignedIn) return;
@@ -42,6 +46,21 @@ export default function TokenBubble() {
     }
   }, [getToken, isSignedIn]);
 
+  const handleMouseEnter = () => {
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
+    }
+    setShowTooltip(true);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setShowTooltip(false);
+    }, 200);
+    setHoverTimeout(timeout);
+  };
+
   useEffect(() => {
     if (isLoaded && isSignedIn) {
       fetchStatus();
@@ -55,9 +74,10 @@ export default function TokenBubble() {
       return () => {
         clearInterval(interval);
         window.removeEventListener('focus', fetchStatus);
+        if (hoverTimeout) clearTimeout(hoverTimeout);
       };
     }
-  }, [isLoaded, isSignedIn, fetchStatus]);
+  }, [isLoaded, isSignedIn, fetchStatus, hoverTimeout]);
 
   if (!isSignedIn || !isReady) return null;
 
@@ -73,14 +93,20 @@ export default function TokenBubble() {
   const colorClass = available < 5 ? '#ef4444' : available < limit * 0.3 ? '#eab308' : '#22c55e';
 
   return (
-    <div className="fixed bottom-6 left-6 z-[100] flex items-center justify-center font-sans tracking-tight">
+    <>
+    <div 
+      className="fixed bottom-20 md:bottom-6 right-6 z-[100] flex items-center justify-center font-sans tracking-tight"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <AnimatePresence>
         {showTooltip && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full mb-4 left-0 w-64 bg-[#0e0e0e] border border-white/10 rounded-2xl p-4 shadow-2xl backdrop-blur-xl"
+            onMouseEnter={handleMouseEnter}
+            className="absolute bottom-full mb-4 right-0 w-64 bg-[#0e0e0e] border border-white/10 rounded-2xl p-4 shadow-2xl backdrop-blur-xl"
           >
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">
@@ -98,16 +124,16 @@ export default function TokenBubble() {
               </div>
 
               {/* Botón de Recarga (Upselling) */}
-              <a 
-                href="http://localhost:5000/dashboard" 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => {
+                  setShowTooltip(false);
+                  setIsModalOpen(true);
+                }}
                 className="flex items-center justify-center gap-2 w-full py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white rounded-xl text-[11px] font-black uppercase transition-all active:scale-95 shadow-lg shadow-orange-500/20"
               >
                 <Zap size={14} className="fill-current" />
                 Recargar Tokens
-                <ExternalLink size={12} className="ml-0.5 opacity-60" />
-              </a>
+              </button>
             </div>
           </motion.div>
         )}
@@ -115,8 +141,6 @@ export default function TokenBubble() {
 
       <motion.div
         layoutId="token-bubble"
-        onHoverStart={() => setShowTooltip(true)}
-        onHoverEnd={() => setShowTooltip(false)}
         onClick={() => setShowTooltip(!showTooltip)}
         initial={{ scale: 0, rotate: -45 }}
         animate={{ scale: 1, rotate: 0 }}
@@ -163,5 +187,11 @@ export default function TokenBubble() {
         )}
       </motion.div>
     </div>
+    
+    <TokenRechargeModal 
+      isOpen={isModalOpen} 
+      onClose={() => setIsModalOpen(false)} 
+    />
+    </>
   );
 }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import ReceiptScanner from '@/components/ReceiptScanner';
+import { Suspense } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Wallet, Receipt, TrendingUp, Calendar } from 'lucide-react';
@@ -103,7 +104,14 @@ export default async function DashboardPage() {
         {/* OCR Section */}
         <section className="space-y-4">
           <h2 className="text-xl font-bold px-2">Nuevo Registro</h2>
-          <ReceiptScanner />
+          <Suspense fallback={
+            <div className="obsidian-card rounded-[2.5rem] p-12 text-center border-white/5 bg-[#0a0a0a] animate-pulse">
+              <div className="w-12 h-12 bg-white/5 rounded-full mx-auto mb-4"></div>
+              <div className="h-4 w-32 bg-white/5 mx-auto rounded"></div>
+            </div>
+          }>
+            <ReceiptScanner />
+          </Suspense>
         </section>
 
         {/* Recent Activity */}

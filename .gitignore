@@ -46,3 +46,6 @@ dev.db-journal
 
 # logs
 *.log
+
+# uploads
+/public/uploads

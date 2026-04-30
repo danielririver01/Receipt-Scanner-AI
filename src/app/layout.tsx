@@ -30,16 +30,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html
-        lang="es"
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} h-full antialiased`}
-      >
+    <html
+      lang="es"
+      className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} h-full antialiased`}
+    >
+      <ClerkProvider>
         <body className="min-h-full flex flex-col text-white">
           {children}
           <TokenBubble />
         </body>
-      </html>
-    </ClerkProvider>
+      </ClerkProvider>
+    </html>
   );
 }

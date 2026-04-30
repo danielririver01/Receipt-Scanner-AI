@@ -1,7 +1,9 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import cloudinary from '@/lib/cloudinary';
+import fs from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import Tesseract from 'tesseract.js';
 
@@ -60,21 +62,23 @@ export async function processReceipt(formData: FormData) {
     const file = formData.get('file') as File;
     if (!file) throw new Error('No file provided');
 
-    // 2. Upload to Cloudinary
+    // 2. Save locally to public/uploads
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExtension}`;
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    const filePath = path.join(uploadsDir, fileName);
+    
+    // Asegurar que el directorio existe (doble check)
+    await fs.mkdir(uploadsDir, { recursive: true });
+    await fs.writeFile(filePath, buffer);
+    
+    const imageUrl = `/uploads/${fileName}`;
 
-    const uploadResponse = await new Promise<{ secure_url: string }>((resolve, reject) => {
-      cloudinary.uploader.upload_stream({ folder: 'receipts' }, (error, result) => {
-        if (error || !result) reject(error || new Error('Upload failed'));
-        else resolve(result as { secure_url: string });
-      }).end(buffer);
-    });
-
-    const imageUrl = uploadResponse.secure_url;
-
-    // 3. Extract Raw Text with Tesseract.js
-    const { data: { text } } = await Tesseract.recognize(imageUrl, 'spa+eng');
+    // 3. Extract Raw Text with Tesseract.js (using buffer)
+    const { data: { text } } = await Tesseract.recognize(buffer, 'spa+eng');
 
     // 4. Structure Data with DeepSeek-V3
     const categories = await prisma.category.findMany({
