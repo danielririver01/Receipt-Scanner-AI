@@ -13,24 +13,40 @@ const VELZIA_API = process.env.NEXT_PUBLIC_VELZIA_API_URL || 'http://localhost:5
  * Fase 2: Ayudantes de Comunicación con Velzia Token System
  */
 async function consumeToken(clerkToken: string, clerkId: string) {
-  const resp = await fetch(`${VELZIA_API}/api/tokens/consume`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${clerkToken}`
-    },
-    body: JSON.stringify({ clerk_id: clerkId })
-  });
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos de timeout
 
-  if (resp.status === 402) {
-    throw new Error('Tokens insuficientes. Por favor, recarga en el Dashboard de Velzia.');
+    const resp = await fetch(`${VELZIA_API}/api/tokens/consume`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${clerkToken}`
+      },
+      body: JSON.stringify({ clerk_id: clerkId }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (resp.status === 402) {
+      throw new Error('Tokens insuficientes. Por favor, recarga en el Dashboard de Velzia.');
+    }
+
+    if (!resp.ok) {
+      console.error(`[OCR] Velzia API error: ${resp.status} ${resp.statusText}`);
+      throw new Error('Error al validar tokens con Velzia.');
+    }
+
+    return await resp.json();
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('[OCR] Token consumption timed out');
+      throw new Error('El servidor de tokens no responde (Timeout).');
+    }
+    console.error('[OCR] Error in consumeToken:', error);
+    throw error;
   }
-
-  if (!resp.ok) {
-    throw new Error('Error al validar tokens con Velzia.');
-  }
-
-  return await resp.json();
 }
 
 async function refundToken(clerkToken: string, clerkId: string) {
@@ -55,8 +71,11 @@ export async function processReceipt(formData: FormData) {
   const clerkToken = await getToken();
   if (!clerkToken) throw new Error('Could not retrieve Clerk Token');
 
+  console.log('[OCR] Starting process for user:', userId);
   // 1. Consumo Atómico de Token (Velzia 2.0.0)
+  console.log('[OCR] Consuming token...');
   await consumeToken(clerkToken, userId);
+  console.log('[OCR] Token consumed successfully');
 
   try {
     const file = formData.get('file') as File;
@@ -78,17 +97,22 @@ export async function processReceipt(formData: FormData) {
     const imageUrl = `/uploads/${fileName}`;
 
     // 3. Extract Raw Text with Tesseract.js (using buffer)
+    console.log('[OCR] Starting Tesseract recognition...');
     const { data: { text } } = await Tesseract.recognize(buffer, 'spa+eng');
+    console.log('[OCR] Tesseract recognition complete. Text length:', text.length);
 
     // 4. Structure Data with DeepSeek-V3
+    console.log('[OCR] Fetching categories from database...');
     const categories = await prisma.category.findMany({
       where: { userId },
       select: { name: true }
     });
 
     const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
+    console.log('[OCR] Category names:', categoryNames);
 
-    const deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    console.log('[OCR] Sending data to DeepSeek API...');
+    const deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -111,10 +135,16 @@ export async function processReceipt(formData: FormData) {
       })
     });
 
-    if (!deepseekResponse.ok) throw new Error('Failed to process data with DeepSeek');
+    if (!deepseekResponse.ok) {
+      const errorText = await deepseekResponse.text();
+      console.error('[OCR] DeepSeek API error:', deepseekResponse.status, errorText);
+      throw new Error(`Failed to process data with DeepSeek: ${deepseekResponse.status}`);
+    }
 
     const deepseekResult = await deepseekResponse.json();
+    console.log('[OCR] DeepSeek response received');
     const structuredData = JSON.parse(deepseekResult.choices[0].message.content || '{}');
+    console.log('[OCR] Structured data:', structuredData);
 
     return {
       ...structuredData,
