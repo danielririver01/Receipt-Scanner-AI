@@ -98,10 +98,11 @@ export default function ReceiptScanner() {
       const data = await processReceipt(formData) as OCRResult;
       setResult(data);
       setStep('editing');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error scanning receipt:', error);
       setStep('idle');
-      showModal('error', 'Error de Escaneo', 'No pudimos procesar el ticket. Asegúrate de que sea una factura válida y legible.');
+      const errorMessage = error.message || 'No pudimos procesar el ticket. Asegúrate de que sea una factura válida y legible.';
+      showModal('error', 'Error de Escaneo', errorMessage);
     } finally {
       clearInterval(statusInterval);
       setLoading(false);

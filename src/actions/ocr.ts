@@ -98,7 +98,17 @@ export async function processReceipt(formData: FormData) {
 
     // 3. Extract Raw Text with Tesseract.js (using buffer)
     console.log('[OCR] Starting Tesseract recognition...');
-    const { data: { text } } = await Tesseract.recognize(buffer, 'spa+eng');
+    const worker = await Tesseract.createWorker('spa+eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          console.log(`[OCR] Tesseract Progress: ${(m.progress * 100).toFixed(2)}%`);
+        } else {
+          console.log(`[OCR] Tesseract Status: ${m.status}`);
+        }
+      }
+    });
+    const { data: { text } } = await worker.recognize(buffer);
+    await worker.terminate();
     console.log('[OCR] Tesseract recognition complete. Text length:', text.length);
 
     // 4. Structure Data with DeepSeek-V3
@@ -112,6 +122,9 @@ export async function processReceipt(formData: FormData) {
     console.log('[OCR] Category names:', categoryNames);
 
     console.log('[OCR] Sending data to DeepSeek API...');
+    const dsController = new AbortController();
+    const dsTimeout = setTimeout(() => dsController.abort(), 30000); // 30 segundos para DeepSeek
+
     const deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -132,8 +145,10 @@ export async function processReceipt(formData: FormData) {
           }
         ],
         response_format: { type: "json_object" }
-      })
+      }),
+      signal: dsController.signal
     });
+    clearTimeout(dsTimeout);
 
     if (!deepseekResponse.ok) {
       const errorText = await deepseekResponse.text();
@@ -152,10 +167,15 @@ export async function processReceipt(formData: FormData) {
       imageUrl
     };
 
-  } catch (error) {
+  } catch (error: any) {
     // Reembolso en caso de fallo catastrófico (petición de usuario)
     console.error('OCR Process failed, refunding token...', error);
     await refundToken(clerkToken, userId);
+
+    if (error.name === 'AbortError') {
+      throw new Error('La IA de DeepSeek tardó demasiado en responder (Timeout).');
+    }
+
     throw error;
   }
 }
