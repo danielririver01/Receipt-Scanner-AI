@@ -20,8 +20,11 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Velzia Obsidian - Premium Experience",
+  title: "Velzia",
   description: "Gestión de nivel superior para restauranteros que valoran la eficiencia y el control absoluto.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -34,7 +37,11 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} h-full antialiased`}
     >
-      <ClerkProvider>
+      <ClerkProvider
+        afterSignOutUrl="/"
+        signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
+      >
         <body className="min-h-full flex flex-col text-white">
           {children}
           <TokenBubble />

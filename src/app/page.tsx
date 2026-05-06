@@ -95,10 +95,10 @@ export default async function LandingPage() {
               </Link>
             ) : (
               <Link
-                href="https://www.velzia.co/register?plan=trial"
+                href="/sign-in"
                 className="btn-primary px-12 py-5 rounded-full font-bold text-lg inline-block"
               >
-                Probar Velzia Gratis
+                Iniciar Sesión
               </Link>
             )}
             <p className="mt-6 text-gray-600 text-sm">Empieza hoy. Sin complicaciones. Sin rodeos.</p>

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,42 +6,223 @@ datasource db {
   provider = "mysql"
 }
 
-model Category {
-  id        String    @id @default(cuid())
-  name      String
-  userId    String
-  expenses  Expense[]
-  budgets   Budget[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model ai_token_transactions {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  type          String    @db.VarChar(20)
+  amount        Int
+  source        String    @db.VarChar(50)
+  mp_payment_id String?   @db.VarChar(100)
+  description   String?   @db.VarChar(200)
+  created_at    DateTime? @db.DateTime(0)
+  users         users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "ai_token_transactions_ibfk_1")
 
-  @@unique([name, userId])
+  @@index([user_id], map: "user_id")
 }
 
-model Expense {
-  id          String   @id @default(cuid())
-  amount      Float
-  description String
-  date        DateTime @default(now())
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  userId      String
-  receiptUrl  String?
-  ocrText     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model ai_token_wallets {
+  id                Int       @id @default(autoincrement())
+  user_id           Int       @unique(map: "user_id")
+  plan_limit        Int?
+  plan_tokens       Int
+  extra_tokens      Int
+  tokens_used_month Int
+  reset_at          DateTime? @db.DateTime(0)
+  created_at        DateTime? @db.DateTime(0)
+  updated_at        DateTime? @db.DateTime(0)
+  users             users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "ai_token_wallets_ibfk_1")
 }
 
-model Budget {
+model alembic_version {
+  version_num String @id @db.VarChar(32)
+}
+
+model categories {
+  id            Int         @id @default(autoincrement())
+  restaurant_id Int
+  name          String      @db.VarChar(100)
+  description   String?     @db.Text
+  sort_order    Int
+  is_active     Boolean
+  image_url     String?     @db.VarChar(255)
+  created_at    DateTime?   @db.DateTime(0)
+  updated_at    DateTime?   @db.DateTime(0)
+  restaurants   restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "categories_ibfk_1")
+  products      products[]
+
+  @@index([restaurant_id], map: "restaurant_id")
+}
+
+model modifiers {
+  id            Int         @id @default(autoincrement())
+  restaurant_id Int
+  product_id    Int
+  name          String      @db.VarChar(50)
+  extra_price   Int
+  is_active     Boolean
+  created_at    DateTime?   @db.DateTime(0)
+  updated_at    DateTime?   @db.DateTime(0)
+  products      products    @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "modifiers_ibfk_1")
+  restaurants   restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "modifiers_ibfk_2")
+
+  @@index([product_id], map: "product_id")
+  @@index([restaurant_id], map: "restaurant_id")
+}
+
+model order_items {
+  id                 Int          @id @default(autoincrement())
+  order_id           Int
+  restaurant_id      Int?
+  product_name       String       @db.VarChar(100)
+  product_price      Int
+  quantity           Int
+  modifiers_snapshot String?      @db.Text
+  subtotal           Int
+  orders             orders       @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_1")
+  restaurants        restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_2")
+
+  @@index([order_id], map: "order_id")
+  @@index([restaurant_id], map: "restaurant_id")
+}
+
+model orders {
+  id             Int           @id @default(autoincrement())
+  restaurant_id  Int
+  table_id       Int?
+  order_number   String        @db.VarChar(20)
+  customer_name  String?       @db.VarChar(100)
+  customer_phone String?       @db.VarChar(20)
+  status         String        @db.VarChar(20)
+  total          Int
+  notes          String?       @db.Text
+  created_at     DateTime?     @db.DateTime(0)
+  updated_at     DateTime?     @db.DateTime(0)
+  order_items    order_items[]
+  restaurants    restaurants   @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "orders_ibfk_1")
+  tables         tables?       @relation(fields: [table_id], references: [id], onUpdate: Restrict, map: "orders_ibfk_2")
+
+  @@index([restaurant_id], map: "restaurant_id")
+  @@index([table_id], map: "table_id")
+}
+
+model products {
+  id             Int         @id @default(autoincrement())
+  restaurant_id  Int
+  category_id    Int
+  name           String      @db.VarChar(100)
+  description    String?     @db.Text
+  price          Int
+  is_active      Boolean
+  is_highlighted Boolean
+  image_url      String?     @db.VarChar(255)
+  created_at     DateTime?   @db.DateTime(0)
+  updated_at     DateTime?   @db.DateTime(0)
+  modifiers      modifiers[]
+  categories     categories  @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "products_ibfk_1")
+  restaurants    restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "products_ibfk_2")
+
+  @@index([category_id], map: "category_id")
+  @@index([restaurant_id], map: "restaurant_id")
+}
+
+model restaurants {
+  id                      Int           @id @default(autoincrement())
+  name                    String        @db.VarChar(100)
+  slug                    String        @unique(map: "slug") @db.VarChar(50)
+  whatsapp_phone          String        @db.VarChar(20)
+  plan_type               String        @db.VarChar(20)
+  subscription_expires_at DateTime?     @db.DateTime(0)
+  is_active               Boolean
+  is_open                 Boolean
+  has_used_trial          Boolean
+  created_at              DateTime?     @db.DateTime(0)
+  categories              categories[]
+  modifiers               modifiers[]
+  order_items             order_items[]
+  orders                  orders[]
+  products                products[]
+  tables                  tables[]
+  users                   users[]
+}
+
+model tables {
+  id            Int         @id @default(autoincrement())
+  restaurant_id Int
+  name          String      @db.VarChar(50)
+  qr_code       String?     @db.VarChar(255)
+  is_active     Boolean
+  created_at    DateTime?   @db.DateTime(0)
+  orders        orders[]
+  restaurants   restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tables_ibfk_1")
+
+  @@index([restaurant_id], map: "restaurant_id")
+}
+
+model trial_history {
+  id             Int       @id @default(autoincrement())
+  email          String?   @db.VarChar(120)
+  whatsapp_phone String?   @db.VarChar(20)
+  created_at     DateTime? @db.DateTime(0)
+}
+
+model users {
+  id                    Int                     @id @default(autoincrement())
+  restaurant_id         Int?
+  username              String                  @db.VarChar(80)
+  email                 String                  @unique(map: "email") @db.VarChar(120)
+  password              String                  @db.VarChar(255)
+  clerk_id              String?                 @unique(map: "ix_users_clerk_id") @db.VarChar(100)
+  ai_token_transactions ai_token_transactions[]
+  ai_token_wallets      ai_token_wallets?
+  restaurants           restaurants?            @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "users_ibfk_1")
+
+  @@index([restaurant_id], map: "restaurant_id")
+}
+
+model velzia_budget {
   id         String   @id @default(cuid())
   amount     Float
   categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
   userId     String
-  month      Int      // 1-12
+  month      Int
   year       Int
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime
+  category   velzia_category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Budget_categoryId_fkey")
 
-  @@unique([categoryId, month, year])
+  @@unique([categoryId, month, year], map: "Budget_categoryId_month_year_key")
+  @@map("budget")
+}
+
+model velzia_category {
+  id        String    @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  budget    velzia_budget[]
+  expense   velzia_expense[]
+
+  @@unique([name, userId], map: "Category_name_userId_key")
+  @@map("category")
+}
+
+model velzia_expense {
+  id               String   @id @default(cuid())
+  amount           Float
+  amountConfidence Float?
+  description      String
+  date             DateTime @default(now())
+  categoryId       String
+  userId           String
+  receiptUrl       String?
+  ocrText          String?
+  items            String?
+  itemsConfidence  Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  category         velzia_category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Expense_categoryId_fkey")
+
+  @@index([categoryId], map: "Expense_categoryId_fkey")
+  @@map("expense")
 }

@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Trash2, Save, Target, Tag as TagIcon } from 'lucide-react';
-import { deleteCategory, setBudget } from "@/actions/categories";
+import React, { useState, useEffect } from 'react';
+import { Trash2, Save, Target, Tag as TagIcon, Pencil } from 'lucide-react';
+import { deleteCategory, setBudget, updateCategory } from "@/actions/categories";
 import DeleteModal from './DeleteModal';
 import StatusModal, { ModalType } from './StatusModal';
 
 interface Category {
   id: string;
   name: string;
-  budgets: {
+  budget: {
     amount: number;
   }[];
 }
@@ -20,9 +20,17 @@ interface CategoryManagerProps {
 
 export default function CategoryManager({ initialCategories }: CategoryManagerProps) {
   const [categories, setCategories] = useState(initialCategories);
+
+  // Sincronizar con datos del servidor cuando initialCategories cambie
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   // Status Modal State
   const [statusModal, setStatusModal] = useState<{
@@ -73,6 +81,24 @@ export default function CategoryManager({ initialCategories }: CategoryManagerPr
     }
   };
 
+  const handleEditClick = (id: string, name: string) => {
+    setEditingId(id);
+    setEditName(name);
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editName.trim()) return;
+    try {
+      await updateCategory(id, editName.trim());
+      setCategories(prev => prev.map(c => c.id === id ? { ...c, name: editName.trim() } : c));
+      setEditingId(null);
+      showStatus('success', '¡Guardado!', 'La categoría ha sido actualizada.');
+    } catch (error) {
+      console.error("Error updating category:", error);
+      showStatus('error', 'Error', 'No se pudo actualizar la categoría.');
+    }
+  };
+
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-bold px-2 flex items-center gap-2">
@@ -87,14 +113,49 @@ export default function CategoryManager({ initialCategories }: CategoryManagerPr
                 <div className="w-10 h-10 rounded-xl glass-container flex items-center justify-center text-gray-400 group-hover:text-orange-500 transition-colors">
                   <Target className="w-5 h-5" />
                 </div>
-                <span className="font-bold text-lg text-white tracking-tight uppercase">{category.name}</span>
+                {editingId === category.id ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="glass-container bg-transparent rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500/50"
+                      autoFocus
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(category.id)}
+                    />
+                    <button
+                      onClick={() => handleSaveEdit(category.id)}
+                      className="p-2 text-green-500 hover:text-green-400"
+                    >
+                      <Save className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="p-2 text-gray-500 hover:text-gray-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="font-bold text-lg text-white tracking-tight uppercase">{category.name}</span>
+                )}
               </div>
-              <button 
-                onClick={() => handleDeleteClick(category.id)}
-                className="p-2 text-gray-600 hover:text-red-500 transition-colors"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {editingId !== category.id && (
+                  <button
+                    onClick={() => handleEditClick(category.id, category.name)}
+                    className="p-2 text-gray-400 hover:text-orange-500 transition-colors"
+                  >
+                    <Pencil className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDeleteClick(category.id)}
+                  className="p-2 text-gray-600 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <form action={async (formData) => {
@@ -109,7 +170,7 @@ export default function CategoryManager({ initialCategories }: CategoryManagerPr
                     type="number"
                     name="amount"
                     step="0.01"
-                    defaultValue={category.budgets[0]?.amount || ''}
+                    defaultValue={category.budget[0]?.amount || ''}
                     placeholder="0.00"
                     className="w-full glass-container bg-transparent rounded-xl pl-8 pr-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors"
                   />
@@ -131,7 +192,7 @@ export default function CategoryManager({ initialCategories }: CategoryManagerPr
         )}
       </div>
 
-      <DeleteModal 
+      <DeleteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={confirmDelete}

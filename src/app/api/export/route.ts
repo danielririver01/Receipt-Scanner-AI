@@ -8,23 +8,23 @@ export async function GET() {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const expenses = await prisma.expense.findMany({
+  const expenses = await prisma.velzia_expense.findMany({
     where: { userId },
     include: { category: true },
     orderBy: { date: 'desc' }
   });
 
   const headers = ["Fecha", "Comercio/Descripción", "Monto", "Categoría"];
-  const rows = expenses.map((e) => [
+  const rows = expenses.map((e: { date: Date; description?: string | null; amount: number; category: { name: string } }) => [
     e.date.toISOString().split('T')[0],
     `"${(e.description || '').replace(/"/g, '""')}"`,
     e.amount.toString(),
-    `"${e.category.name.replace(/"/g, '""')}"`
+    e.category.name
   ]);
 
   const csvContent = [
     headers.join(","),
-    ...rows.map(row => row.join(","))
+    ...rows.map((row: string[]) => row.join(","))
   ].join("\n");
 
   return new NextResponse(csvContent, {

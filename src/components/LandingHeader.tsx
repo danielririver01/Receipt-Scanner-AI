@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { SignInButton, UserButton } from '@clerk/nextjs';
 import { Menu, X } from 'lucide-react';
 
 interface LandingHeaderProps {
@@ -49,11 +48,12 @@ export default function LandingHeader({ userId }: LandingHeaderProps) {
             </Link>
           ) : (
             <>
-              <SignInButton mode="modal">
-                <button className="hidden md:block text-sm font-medium text-gray-400 hover:text-white cursor-pointer">
-                  Iniciar sesión
-                </button>
-              </SignInButton>
+              <Link
+                href="/sign-in"
+                className="hidden md:block text-sm font-medium text-gray-400 hover:text-white cursor-pointer"
+              >
+                Iniciar sesion
+              </Link>
               <Link
                 href="https://www.velzia.co/register?plan=trial"
                 className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-orange-500 hover:text-white transition-all duration-300"
@@ -96,11 +96,13 @@ export default function LandingHeader({ userId }: LandingHeaderProps) {
                 Ir al Dashboard
               </Link>
             ) : (
-              <SignInButton mode="modal">
-                <button className="text-lg font-bold text-gray-400 hover:text-white text-left">
-                  Iniciar sesión
-                </button>
-              </SignInButton>
+              <Link
+                href="/sign-in"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-lg font-bold text-gray-400 hover:text-white text-left"
+              >
+                Iniciar sesion
+              </Link>
             )}
           </div>
         </div>

@@ -8,14 +8,23 @@ import { Loader2, Upload, Check, X, Camera, Sparkles, AlertCircle, RefreshCcw, S
 import StatusModal, { ModalType } from './StatusModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface Item {
+  name: string;
+  price: number;
+  confidence?: number;
+}
+
 interface OCRResult {
   amount: number;
+  amountConfidence: number;
   merchant: string;
   date: string;
   category: string;
   description: string;
   ocrText: string;
   imageUrl: string;
+  items: Item[];
+  itemsConfidence: number;
 }
 
 type ScanStep = 'idle' | 'preview' | 'scanning' | 'editing';
@@ -30,7 +39,7 @@ export default function ReceiptScanner() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OCRResult | null>(null);
-  const [analysisStatus, setAnalysisStatus] = useState('Iniciando motores de IA...');
+  const [analysisStatus, setAnalysisStatus] = useState('Iniciando análisis...');
 
   // Modal State
   const [modal, setModal] = useState<{
@@ -118,10 +127,14 @@ export default function ReceiptScanner() {
         date: result.date,
         categoryName: result.category,
         receiptUrl: result.imageUrl,
-        ocrText: result.ocrText
+        ocrText: result.ocrText,
+        items: result.items && result.items.length > 0 ? JSON.stringify(result.items) : undefined,
+        amountConfidence: result.amountConfidence,
+        itemsConfidence: result.itemsConfidence
       });
       resetScanner();
       showModal('success', '¡Registrado!', 'El gasto se ha guardado correctamente.');
+      setTimeout(() => router.refresh(), 500);
     } catch (error) {
       console.error('Error saving expense:', error);
       showModal('error', 'Error', 'No se pudo guardar el registro.');
@@ -138,7 +151,7 @@ export default function ReceiptScanner() {
   };
 
   return (
-    <div className="obsidian-card rounded-[2.5rem] p-1 md:p-1 overflow-hidden relative transition-all duration-500 border-white/5 bg-[#0a0a0a]">
+    <div className="obsidian-card rounded-[2.5rem] p-1 md:p-1 overflow-hidden relative transition-all duration-500 border-white/5" style={{ background: 'var(--color-surface-primary)' }}>
       
       <div className="p-6 md:p-8">
         <AnimatePresence mode="wait">
@@ -160,7 +173,7 @@ export default function ReceiptScanner() {
               </div>
               
               <div className="space-y-2">
-                <h3 className="text-2xl font-black tracking-tight text-white uppercase">Escáner IA Premium</h3>
+                <h3 className="text-2xl font-black tracking-tight text-white uppercase">Registro de Gastos</h3>
                 <p className="text-gray-500 text-xs max-w-[240px] mx-auto font-medium uppercase tracking-widest leading-relaxed">
                   Extracción inteligente de datos con precisión milimétrica.
                 </p>
@@ -227,7 +240,7 @@ export default function ReceiptScanner() {
                   className="bg-orange-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-600/20 hover:bg-orange-500 transition-all active:scale-95 uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
                 >
                   <Sparkles size={14} />
-                  Analizar con IA
+                  Analizar
                 </button>
               </div>
             </motion.div>
@@ -283,13 +296,20 @@ export default function ReceiptScanner() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <h3 className="text-2xl font-black text-white tracking-tighter uppercase leading-none">Revisión de IA</h3>
+                  <h3 className="text-2xl font-black text-white tracking-tighter uppercase leading-none">Revisión</h3>
                   <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-1">Extracción completada</span>
                 </div>
                 <button onClick={resetScanner} className="p-2 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-colors">
                   <RefreshCcw size={18} />
                 </button>
               </div>
+
+              {/* Image preview */}
+              {result.imageUrl && (
+                <div className="relative aspect-[3/4] w-full max-w-[200px] mx-auto rounded-2xl overflow-hidden border border-white/10">
+                  <img src={result.imageUrl} alt="Receipt" className="w-full h-full object-cover" />
+                </div>
+              )}
 
               <div className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -300,7 +320,7 @@ export default function ReceiptScanner() {
                         type="text"
                         value={result.merchant}
                         onChange={(e) => setResult({ ...result, merchant: e.target.value })}
-                        className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-white font-bold focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black"
+                        className="w-full style={{ background: 'var(--color-surface-secondary)' }} border border-white/5 rounded-2xl px-5 py-4 text-white font-bold focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black"
                       />
                     </div>
                   </div>
@@ -311,8 +331,11 @@ export default function ReceiptScanner() {
                       <input
                         type="number"
                         value={result.amount}
-                        onChange={(e) => setResult({ ...result, amount: parseFloat(e.target.value) })}
-                        className="w-full bg-[#111] border border-white/5 rounded-2xl pl-10 pr-5 py-4 text-white font-black text-xl focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black"
+                        onChange={(e) => {
+                          const newAmount = parseFloat(e.target.value) || 0;
+                          setResult({ ...result, amount: newAmount });
+                        }}
+                        className="w-full style={{ background: 'var(--color-surface-secondary)' }} border border-white/5 rounded-2xl pl-10 pr-5 py-4 text-white font-black text-xl focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
@@ -322,7 +345,7 @@ export default function ReceiptScanner() {
                       type="text"
                       value={result.category}
                       onChange={(e) => setResult({ ...result, category: e.target.value })}
-                      className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-white font-bold focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black"
+                      className="w-full style={{ background: 'var(--color-surface-secondary)' }} border border-white/5 rounded-2xl px-5 py-4 text-white font-bold focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -331,10 +354,57 @@ export default function ReceiptScanner() {
                       type="date"
                       value={result.date?.split('T')[0]}
                       onChange={(e) => setResult({ ...result, date: e.target.value })}
-                      className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-white font-bold focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black [color-scheme:dark]"
+                      className="w-full style={{ background: 'var(--color-surface-secondary)' }} border border-white/5 rounded-2xl px-5 py-4 text-white font-bold focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black [color-scheme:dark]"
                     />
                   </div>
                 </div>
+
+                {/* Products extracted */}
+                {result.items && result.items.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Productos Extraídos ({result.items.length})</span>
+                      {result.itemsConfidence < 0.8 && (
+                        <span className="text-[10px] text-orange-500 font-bold">⚠️ Revisar suma</span>
+                      )}
+                    </div>
+                    <div className="bg-white/5 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto">
+                      {result.items.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => {
+                              const newItems = [...result.items];
+                              newItems[idx] = { ...item, name: e.target.value };
+                              setResult({ ...result, items: newItems });
+                            }}
+                            className="flex-1 bg-transparent border-none text-white text-sm font-medium focus:outline-none placeholder:text-gray-600"
+                            placeholder="Producto"
+                          />
+                          <input
+                            type="number"
+                            value={item.price}
+                            onChange={(e) => {
+                              const newItems = [...result.items];
+                              newItems[idx] = { ...item, price: parseFloat(e.target.value) || 0 };
+                              const newTotal = newItems.reduce((sum, i) => sum + i.price, 0);
+                              setResult({ ...result, items: newItems, amount: newTotal });
+                            }}
+                            className="w-24 bg-white/10 rounded-lg px-2 py-1 text-white text-sm font-bold text-right focus:outline-none focus:border-orange-500/50 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="0"
+                          />
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/5">
+                        <span className="text-gray-500 text-sm">Suma:</span>
+                        <span className={`font-bold ${Math.abs(result.items.reduce((sum, i) => sum + i.price, 0) - result.amount) > 100 ? 'text-orange-500' : 'text-white'}`}>
+                          ${result.items.reduce((sum, i) => sum + i.price, 0).toLocaleString('es-CO')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button

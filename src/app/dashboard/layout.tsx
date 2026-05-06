@@ -1,12 +1,15 @@
 import Link from 'next/link';
-import { UserButton } from "@clerk/nextjs";
-import { LayoutDashboard, Tag, PlusCircle } from 'lucide-react';
+import ClerkUserButton from '@/components/ClerkUserButton';
+import { LayoutDashboard, Tag, PlusCircle, Activity, ArrowLeft } from 'lucide-react';
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    // URL de la app principal (Flask/Orderfox)
+    const VELZIA_URL = process.env.NEXT_PUBLIC_VELZIA_URL || 'http://localhost:5000';
+
     return (
         <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-outfit">
             {/* Desktop Sidebar */}
@@ -31,11 +34,29 @@ export default function DashboardLayout({
                         <Tag className="w-5 h-5" />
                         <span className="font-medium">Categorías</span>
                     </Link>
+                    <Link
+                        href="/dashboard/activity"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-gray-400 hover:text-white"
+                    >
+                        <Activity className="w-5 h-5" />
+                        <span className="font-medium">Actividad</span>
+                    </Link>
+
+                    {/* Botón de retorno a Flask - Separado visualmente */}
+                    <div className="pt-4 mt-4 border-t border-white/5">
+                        <a
+                            href={`${VELZIA_URL}/dashboard`}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-500/10 transition-colors text-orange-500 hover:text-orange-400"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="font-medium">Volver al Panel</span>
+                        </a>
+                    </div>
                 </nav>
 
                 <div className="p-4 border-t border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <UserButton afterSignOutUrl="/" />
+                        <ClerkUserButton />
                         <span className="text-sm font-medium text-gray-400">Mi Cuenta</span>
                     </div>
                 </div>
@@ -47,12 +68,20 @@ export default function DashboardLayout({
                     <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center font-bold text-black text-sm">V</div>
                     <span className="font-bold tracking-tighter">VELZIA</span>
                 </div>
-                <UserButton afterSignOutUrl="/" />
+                <div className="flex items-center gap-3">
+                    <a
+                        href={`${VELZIA_URL}/dashboard`}
+                        className="text-xs font-bold text-orange-500 border border-orange-500/30 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors"
+                    >
+                        Volver
+                    </a>
+                    <ClerkUserButton />
+                </div>
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 md:ml-64 pb-20 md:pb-0">
-                <div className="max-w-5xl mx-auto p-6 md:p-10">
+            <main className="flex-1 md:ml-64 pb-28 md:pb-0">
+                <div className="max-w-5xl mx-auto p-4 md:p-10">
                     {children}
                 </div>
             </main>
@@ -62,6 +91,10 @@ export default function DashboardLayout({
                 <Link href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
                     <LayoutDashboard className="w-6 h-6" />
                     <span className="text-[10px] uppercase font-bold tracking-widest">Inicio</span>
+                </Link>
+                <Link href="/dashboard/activity" className="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+                    <Activity className="w-6 h-6" />
+                    <span className="text-[10px] uppercase font-bold tracking-widest">Actividad</span>
                 </Link>
                 <div className="relative -top-4">
                     <Link href="/dashboard?action=scan" className="w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center text-black shadow-lg shadow-orange-500/20 active:scale-95 transition-transform">

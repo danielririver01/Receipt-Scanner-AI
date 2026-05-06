@@ -2,20 +2,27 @@
   "name": "expense-tracker",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0 <24.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "rm -rf .next/cache"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.9.2",
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.7.0",
+    "canvas": "^3.2.3",
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.4.2",
     "framer-motion": "^12.38.0",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.8.0",
     "mariadb": "^3.5.2",
     "next": "^15.1.4",
@@ -27,6 +34,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

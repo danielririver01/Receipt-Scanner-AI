@@ -74,8 +74,8 @@ export default function TokenRechargeModal({ isOpen, onClose }: RechargeModalPro
               </div>
 
               <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">Recargar Tokens IA</h2>
-                <p className="text-sm text-gray-400 mt-2">Potencia tu Scanner IA con más análisis instantáneos.</p>
+                <h2 className="text-2xl font-bold text-white tracking-tight">Recargar Tokens</h2>
+                <p className="text-sm text-gray-400 mt-2">Potencia tu registro de gastos con más análisis instantáneos.</p>
               </div>
             </div>
 

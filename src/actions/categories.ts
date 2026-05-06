@@ -8,25 +8,42 @@ export async function createCategory(name: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  await prisma.category.create({
-    data: {
-      name,
-      userId
-    }
+const category = await prisma.velzia_category.create({
+      data: {
+        name,
+        userId,
+        updatedAt: new Date()
+      },
+    select: { id: true, name: true, budget: { select: { amount: true } } }
   });
 
   revalidatePath('/dashboard/categories');
+  return category;
 }
 
 export async function deleteCategory(id: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  await prisma.category.delete({
+  await prisma.velzia_category.delete({
     where: { id, userId }
   });
 
   revalidatePath('/dashboard/categories');
+}
+
+export async function updateCategory(id: string, name: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const category = await prisma.velzia_category.update({
+    where: { id, userId },
+    data: { name },
+    select: { id: true, name: true }
+  });
+
+  revalidatePath('/dashboard/categories');
+  return category;
 }
 
 export async function setBudget(categoryId: string, amount: number) {
@@ -37,7 +54,7 @@ export async function setBudget(categoryId: string, amount: number) {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  await prisma.budget.upsert({
+  const budget = await prisma.velzia_budget.upsert({
     where: {
       categoryId_month_year: {
         categoryId,
@@ -45,15 +62,17 @@ export async function setBudget(categoryId: string, amount: number) {
         year
       }
     },
-    update: { amount },
+    update: { amount, updatedAt: new Date() },
     create: {
       amount,
       categoryId,
       userId,
       month,
-      year
+      year,
+      updatedAt: new Date()
     }
   });
 
   revalidatePath('/dashboard');
+  return budget;
 }

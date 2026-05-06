@@ -7,6 +7,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: "mysql://root:@localhost:3306/receipt_scanner",
+    url: "mysql://root:admin@localhost:3306/orderfox",
   },
 });
