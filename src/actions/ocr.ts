@@ -13,24 +13,40 @@ const VELZIA_API = process.env.NEXT_PUBLIC_VELZIA_API_URL || 'http://localhost:5
  * Fase 2: Ayudantes de Comunicación con Velzia Token System
  */
 async function consumeToken(clerkToken: string, clerkId: string) {
-  const resp = await fetch(`${VELZIA_API}/api/tokens/consume`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${clerkToken}`
-    },
-    body: JSON.stringify({ clerk_id: clerkId })
-  });
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos de timeout
 
-  if (resp.status === 402) {
-    throw new Error('Tokens insuficientes. Por favor, recarga en el Dashboard de Velzia.');
+    const resp = await fetch(`${VELZIA_API}/api/tokens/consume`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${clerkToken}`
+      },
+      body: JSON.stringify({ clerk_id: clerkId }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (resp.status === 402) {
+      throw new Error('Tokens insuficientes. Por favor, recarga en el Dashboard de Velzia.');
+    }
+
+    if (!resp.ok) {
+      console.error(`[OCR] Velzia API error: ${resp.status} ${resp.statusText}`);
+      throw new Error('Error al validar tokens con Velzia.');
+    }
+
+    return await resp.json();
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('[OCR] Token consumption timed out');
+      throw new Error('El servidor de tokens no responde (Timeout).');
+    }
+    console.error('[OCR] Error in consumeToken:', error);
+    throw error;
   }
-
-  if (!resp.ok) {
-    throw new Error('Error al validar tokens con Velzia.');
-  }
-
-  return await resp.json();
 }
 
 async function refundToken(clerkToken: string, clerkId: string) {
@@ -77,7 +93,7 @@ export async function processReceipt(formData: FormData) {
     
     const imageUrl = `/uploads/${fileName}`;
 
-    // 3. Extract Raw Text with Tesseract.js (using buffer)
+    // 3. Extract Raw Text with Tesseract.js
     const { data: { text } } = await Tesseract.recognize(buffer, 'spa+eng');
 
     // 4. Structure Data with DeepSeek-V3
@@ -88,7 +104,10 @@ export async function processReceipt(formData: FormData) {
 
     const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
-    const deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    const dsController = new AbortController();
+    const dsTimeout = setTimeout(() => dsController.abort(), 30000); // 30 segundos para DeepSeek
+
+    const deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -108,10 +127,12 @@ export async function processReceipt(formData: FormData) {
           }
         ],
         response_format: { type: "json_object" }
-      })
+      }),
+      signal: dsController.signal
     });
+    clearTimeout(dsTimeout);
 
-    if (!deepseekResponse.ok) throw new Error('Failed to process data with DeepSeek');
+    if (!deepseekResponse.ok) throw new Error(`DeepSeek API Error: ${deepseekResponse.status}`);
 
     const deepseekResult = await deepseekResponse.json();
     const structuredData = JSON.parse(deepseekResult.choices[0].message.content || '{}');
@@ -122,10 +143,15 @@ export async function processReceipt(formData: FormData) {
       imageUrl
     };
 
-  } catch (error) {
+  } catch (error: any) {
     // Reembolso en caso de fallo catastrófico (petición de usuario)
     console.error('OCR Process failed, refunding token...', error);
     await refundToken(clerkToken, userId);
+
+    if (error.name === 'AbortError') {
+      throw new Error('La IA de DeepSeek tardó demasiado en responder (Timeout).');
+    }
+
     throw error;
   }
 }

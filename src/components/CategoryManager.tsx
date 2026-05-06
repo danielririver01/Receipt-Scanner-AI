@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trash2, Save, Target, Tag as TagIcon } from 'lucide-react';
 import { deleteCategory, setBudget } from "@/actions/categories";
 import DeleteModal from './DeleteModal';
@@ -20,6 +20,12 @@ interface CategoryManagerProps {
 
 export default function CategoryManager({ initialCategories }: CategoryManagerProps) {
   const [categories, setCategories] = useState(initialCategories);
+
+  // Sincronizar con datos del servidor cuando initialCategories cambie
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
