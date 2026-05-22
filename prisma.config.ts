@@ -7,6 +7,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: "mysql://root:admin@localhost:3306/orderfox",
+    url: process.env.DATABASE_URL || "",
   },
 });

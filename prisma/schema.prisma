@@ -17,7 +17,7 @@ model ai_token_transactions {
   created_at    DateTime? @db.DateTime(0)
   users         users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "ai_token_transactions_ibfk_1")
 
-  @@index([user_id], map: "user_id")
+  @@index([user_id], map: "ai_token_transactions_ibfk_1")
 }
 
 model ai_token_wallets {
@@ -37,6 +37,20 @@ model alembic_version {
   version_num String @id @db.VarChar(32)
 }
 
+model budget {
+  id         String   @id
+  amount     Float
+  categoryId String
+  userId     String
+  month      Int
+  year       Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  category   category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Budget_categoryId_fkey")
+
+  @@unique([categoryId, month, year], map: "Budget_categoryId_month_year_key")
+}
+
 model categories {
   id            Int         @id @default(autoincrement())
   restaurant_id Int
@@ -50,7 +64,38 @@ model categories {
   restaurants   restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "categories_ibfk_1")
   products      products[]
 
-  @@index([restaurant_id], map: "restaurant_id")
+  @@index([restaurant_id], map: "categories_ibfk_1")
+}
+
+model category {
+  id        String    @id
+  name      String
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  budget    budget[]
+  expense   expense[]
+
+  @@unique([name, userId], map: "Category_name_userId_key")
+}
+
+model expense {
+  id               String   @id
+  amount           Float
+  amountConfidence Float?
+  description      String
+  date             DateTime @default(now())
+  categoryId       String
+  userId           String
+  receiptUrl       String?
+  ocrText          String?
+  items            String?  @db.Text
+  itemsConfidence  Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  category         category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Expense_categoryId_fkey")
+
+  @@index([categoryId], map: "Expense_categoryId_fkey")
 }
 
 model modifiers {
@@ -65,8 +110,8 @@ model modifiers {
   products      products    @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "modifiers_ibfk_1")
   restaurants   restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "modifiers_ibfk_2")
 
-  @@index([product_id], map: "product_id")
-  @@index([restaurant_id], map: "restaurant_id")
+  @@index([product_id], map: "modifiers_ibfk_1")
+  @@index([restaurant_id], map: "modifiers_ibfk_2")
 }
 
 model order_items {
@@ -81,8 +126,8 @@ model order_items {
   orders             orders       @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_1")
   restaurants        restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_2")
 
-  @@index([order_id], map: "order_id")
-  @@index([restaurant_id], map: "restaurant_id")
+  @@index([order_id], map: "order_items_ibfk_1")
+  @@index([restaurant_id], map: "order_items_ibfk_2")
 }
 
 model orders {
@@ -95,15 +140,15 @@ model orders {
   status         String        @db.VarChar(20)
   total          Int
   notes          String?       @db.Text
-  expires_at     DateTime?     @db.DateTime(0)
   created_at     DateTime?     @db.DateTime(0)
   updated_at     DateTime?     @db.DateTime(0)
+  expires_at     DateTime?     @db.DateTime(0)
   order_items    order_items[]
   restaurants    restaurants   @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "orders_ibfk_1")
   tables         tables?       @relation(fields: [table_id], references: [id], onUpdate: Restrict, map: "orders_ibfk_2")
 
-  @@index([restaurant_id], map: "restaurant_id")
-  @@index([table_id], map: "table_id")
+  @@index([restaurant_id], map: "orders_ibfk_1")
+  @@index([table_id], map: "orders_ibfk_2")
 }
 
 model products {
@@ -122,8 +167,8 @@ model products {
   categories     categories  @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "products_ibfk_1")
   restaurants    restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "products_ibfk_2")
 
-  @@index([category_id], map: "category_id")
-  @@index([restaurant_id], map: "restaurant_id")
+  @@index([category_id], map: "products_ibfk_1")
+  @@index([restaurant_id], map: "products_ibfk_2")
 }
 
 model restaurants {
@@ -136,8 +181,8 @@ model restaurants {
   is_active               Boolean
   is_open                 Boolean
   has_used_trial          Boolean
-  pending_expiry_hours    Int?
   created_at              DateTime?     @db.DateTime(0)
+  pending_expiry_hours    Int?
   categories              categories[]
   modifiers               modifiers[]
   order_items             order_items[]
@@ -157,7 +202,7 @@ model tables {
   orders        orders[]
   restaurants   restaurants @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tables_ibfk_1")
 
-  @@index([restaurant_id], map: "restaurant_id")
+  @@index([restaurant_id], map: "tables_ibfk_1")
 }
 
 model trial_history {
@@ -178,53 +223,5 @@ model users {
   ai_token_wallets      ai_token_wallets?
   restaurants           restaurants?            @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "users_ibfk_1")
 
-  @@index([restaurant_id], map: "restaurant_id")
-}
-
-model velzia_budget {
-  id         String   @id @default(cuid())
-  amount     Float
-  categoryId String
-  userId     String
-  month      Int
-  year       Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime
-  category   velzia_category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Budget_categoryId_fkey")
-
-  @@unique([categoryId, month, year], map: "Budget_categoryId_month_year_key")
-  @@map("budget")
-}
-
-model velzia_category {
-  id        String    @id @default(cuid())
-  name      String
-  userId    String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime
-  budget    velzia_budget[]
-  expense   velzia_expense[]
-
-  @@unique([name, userId], map: "Category_name_userId_key")
-  @@map("category")
-}
-
-model velzia_expense {
-  id               String   @id @default(cuid())
-  amount           Float
-  amountConfidence Float?
-  description      String
-  date             DateTime @default(now())
-  categoryId       String
-  userId           String
-  receiptUrl       String?
-  ocrText          String?
-  items            String?   @db.Text
-  itemsConfidence  Float?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime
-  category         velzia_category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Expense_categoryId_fkey")
-
-  @@index([categoryId], map: "Expense_categoryId_fkey")
-  @@map("expense")
+  @@index([restaurant_id], map: "users_ibfk_1")
 }

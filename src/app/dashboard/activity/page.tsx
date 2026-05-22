@@ -32,7 +32,7 @@ export default async function RecentActivityPage() {
 
   return (
     <RecentActivityClient
-      expenses={expenses.map(e => ({
+      expenses={expenses.map((e: any) => ({
         ...e,
         date: e.date,
         ocrText: e.ocrText ?? null,
