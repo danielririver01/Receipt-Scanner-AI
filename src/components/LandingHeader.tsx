@@ -55,7 +55,7 @@ export default function LandingHeader({ userId }: LandingHeaderProps) {
                 Iniciar sesion
               </Link>
               <Link
-                href="https://www.velzia.co/register?plan=trial"
+                href={`${process.env.NEXT_PUBLIC_ORDERFOX_URL || 'http://localhost:5000'}/register?plan=trial`}
                 className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-orange-500 hover:text-white transition-all duration-300"
               >
                 Comienza gratis
