@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import TokenBubble from "@/components/TokenBubble";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,7 +43,6 @@ export default function RootLayout({
       >
         <body className="min-h-full flex flex-col text-white">
           {children}
-          <TokenBubble />
         </body>
       </ClerkProvider>
     </html>

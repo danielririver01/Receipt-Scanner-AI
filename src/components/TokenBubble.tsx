@@ -2,123 +2,94 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
+import { Zap } from 'lucide-react';
 import TokenRechargeModal from './TokenRechargeModal';
 
-export default function TokenBubble() {
+interface TokenData {
+  is_elite: boolean;
+  total_available: number;
+  plan_limit: number;
+  tokens_used: number;
+  usage_percent: number;
+}
+
+export default function TokenIndicator({ variant = 'sidebar' }: { variant?: 'sidebar' | 'mobile' }) {
   const { isLoaded, isSignedIn } = useAuth();
-  const [tokenData, setTokenData] = useState<{
-    is_elite: boolean;
-    total_available: number;
-    plan_limit: number;
-    tokens_used: number;
-    usage_percent: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [showRecharge, setShowRecharge] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) {
-      setLoading(false);
-      return;
-    }
+    if (!isLoaded || !isSignedIn) return;
 
-    async function updateTokenStatus() {
+    async function fetchTokens() {
       try {
-        const response = await fetch('/api/tokens/status');
-        
-        if (!response.ok) {
-          console.warn('[TokenBubble] API responded with:', response.status);
-          return;
-        }
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.warn('[TokenBubble] Response is not JSON, likely redirected.');
-          return;
-        }
-
-        const data = await response.json();
+        const res = await fetch('/api/tokens/status');
+        if (!res.ok) return;
+        const contentType = res.headers.get('content-type');
+        if (!contentType?.includes('application/json')) return;
+        const data = await res.json();
         setTokenData(data);
-      } catch (error) {
-        console.error('Error actualizando tokens:', error);
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error('[TokenIndicator]', err);
       }
     }
 
-    updateTokenStatus();
-    const interval = setInterval(updateTokenStatus, 60000);
-    return () => clearInterval(interval);
+    fetchTokens();
+    const interval = setInterval(fetchTokens, 60000);
+    window.addEventListener('focus', fetchTokens);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchTokens);
+    };
   }, [isLoaded, isSignedIn]);
 
-  if (loading || !tokenData) return null;
+  if (!tokenData) return null;
 
-  const { is_elite, total_available, plan_limit, usage_percent } = tokenData;
+  const { is_elite, total_available, plan_limit } = tokenData;
+  const percent = is_elite ? 100 : Math.max(0, Math.min(100, (total_available / (plan_limit || 10)) * 100));
 
-  const CIRCUMFERENCE = 150.8;
-  const percent = is_elite ? 100 : Math.max(0, Math.min(100, usage_percent || 0));
-  const offset = CIRCUMFERENCE - (percent / 100) * CIRCUMFERENCE;
+  let barColor = 'bg-orange-500';
+  if (is_elite) barColor = 'bg-emerald-500';
+  else if (total_available < 5) barColor = 'bg-red-500';
+  else if (total_available < (plan_limit || 10) * 0.3) barColor = 'bg-yellow-500';
 
-  let colorClass = 'text-green-400';
-  let strokeClass = 'stroke-green-500';
-  if (!is_elite) {
-    if (total_available < 5) {
-      strokeClass = 'stroke-red-500';
-      colorClass = 'text-red-400';
-    } else if (total_available < (plan_limit * 0.3)) {
-      strokeClass = 'stroke-yellow-500';
-      colorClass = 'text-yellow-400';
-    }
+  // Mobile: small badge in header
+  if (variant === 'mobile') {
+    return (
+      <>
+        <button
+          onClick={() => setShowRecharge(true)}
+          className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
+        >
+          <Zap className="w-3.5 h-3.5 text-orange-500" />
+          <span className="text-xs font-black text-white">{total_available}</span>
+        </button>
+        <TokenRechargeModal isOpen={showRecharge} onClose={() => setShowRecharge(false)} />
+      </>
+    );
   }
 
+  // Sidebar: full bar with label
   return (
     <>
-      <div className="fixed bottom-24 right-6 md:bottom-6 z-50">
-        <div 
-          className="relative w-16 h-16 cursor-pointer group"
-          onClick={() => setShowRecharge(true)}
-        >
-          <svg className="transform -rotate-90" width="64" height="64" viewBox="0 0 64 64">
-            <circle
-              cx="32" cy="32" r="24"
-              fill="#111111"
-            />
-            <circle
-              className="stroke-white/10"
-              cx="32" cy="32" r="24"
-              fill="none"
-              strokeWidth="4"
-            />
-            <circle
-              className={strokeClass}
-              cx="32" cy="32" r="24"
-              fill="none"
-              strokeWidth="4"
-              strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={is_elite ? 0 : offset}
-              strokeLinecap="round"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-sm font-bold ${colorClass}`}>
-              {is_elite ? '\u221e' : total_available}
-            </span>
+      <button
+        onClick={() => setShowRecharge(true)}
+        className="w-full p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all group flex items-center gap-3"
+      >
+        <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+          <Zap className="w-4 h-4 text-orange-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Tokens IA</span>
+            <span className="text-xs font-black text-white">{is_elite ? '∞' : total_available}</span>
           </div>
-
-          <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block">
-            <div className="bg-gray-800 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap">
-              {is_elite
-                ? `Plan Élite: ${total_available} tokens disponibles`
-                : `${total_available} tokens disponibles - Click para recargar`}
-            </div>
+          <div className="w-full h-1 bg-white/[0.06] rounded-full overflow-hidden">
+            <div className={`h-full ${barColor} rounded-full transition-all duration-700`} style={{ width: `${percent}%` }} />
           </div>
         </div>
-      </div>
-
-      <TokenRechargeModal 
-        isOpen={showRecharge} 
-        onClose={() => setShowRecharge(false)} 
-      />
+      </button>
+      <TokenRechargeModal isOpen={showRecharge} onClose={() => setShowRecharge(false)} />
     </>
   );
 }

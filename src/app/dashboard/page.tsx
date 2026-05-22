@@ -1,7 +1,20 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import DashboardContent from '@/components/DashboardContent';
+import dynamic from 'next/dynamic';
+
+const DashboardContent = dynamic(() => import('@/components/DashboardContent'), {
+  loading: () => (
+    <div className="space-y-10 animate-pulse">
+      <div className="h-12 w-64 bg-white/5 rounded"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-48 bg-white/5 rounded-3xl"></div>
+        ))}
+      </div>
+    </div>
+  )
+});
 
 interface DashboardPageProps {
   searchParams: Promise<{ month?: string; year?: string }>;

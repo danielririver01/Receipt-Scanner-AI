@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Verificar que el usuario existe en Clerk
-    const clerk = clerkClient();
+    const clerk = await clerkClient();
     try {
       await clerk.users.getUser(decoded.clerk_id);
     } catch {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SignOutButton } from '@clerk/nextjs';
 
 const FLASK_REGISTER_URL = process.env.NEXT_PUBLIC_FLASK_REGISTER_URL || 'http://localhost:5000/register';
 
@@ -15,17 +16,16 @@ export default function NotRegisteredPage() {
         </p>
         <div className="flex flex-col gap-4">
           <Link
-            href={FLASK_REGISTER_URL}
+            href={`${FLASK_REGISTER_URL}?plan=trial`}
             className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
           >
             Registrarse en la app principal
           </Link>
-          <Link
-            href="/sign-in"
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            ← Volver al login
-          </Link>
+          <SignOutButton redirectUrl="/sign-in">
+            <button className="text-gray-400 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 mx-auto">
+              ← Volver al login
+            </button>
+          </SignOutButton>
         </div>
       </div>
     </div>

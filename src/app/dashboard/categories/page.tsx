@@ -1,6 +1,22 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import CategoriesWrapper from "@/components/CategoriesWrapper";
+import dynamic from "next/dynamic";
+
+const CategoriesWrapper = dynamic(() => import('@/components/CategoriesWrapper'), {
+  loading: () => (
+    <div className="space-y-10 animate-pulse">
+      <div className="h-12 w-64 bg-white/5 rounded"></div>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="h-32 bg-white/5 rounded-3xl"></div>
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-32 bg-white/5 rounded-3xl"></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+});
 
 export default async function CategoriesPage() {
   const { userId } = await auth();

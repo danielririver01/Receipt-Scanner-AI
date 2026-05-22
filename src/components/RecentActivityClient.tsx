@@ -1,26 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { ArrowLeft, Receipt, Search, Filter, Calendar, ChevronRight, Sparkles, Edit3, Package } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
+import { Expense } from '@/types';
 import EditExpenseModal from './EditExpenseModal';
-
-interface Expense {
-  id: string;
-  description: string;
-  date: Date;
-  amount: number;
-  amountConfidence: number | null;
-  itemsConfidence: number | null;
-  category: { name: string; id?: string };
-  receiptUrl?: string | null;
-  ocrText?: string;
-  items?: string | null;
-}
+import ExpenseCard from './recent-activity/ExpenseCard';
+import Pagination from './recent-activity/Pagination';
+import SearchAndFilterBar from './recent-activity/SearchAndFilterBar';
 
 interface RecentActivityClientProps {
   expenses: Expense[];
@@ -108,171 +97,39 @@ export default function RecentActivityClient({ expenses, totalCount, refreshKey 
       </motion.header>
 
       <div className="px-4 py-6 space-y-6">
-        <motion.div
-          className="relative"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Buscar por establecimiento o categoría..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-gray-500 focus:outline-none focus:border-orange-500/50 transition-all"
-          />
-        </motion.div>
-
-        <motion.div
-          className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Filter className="w-4 h-4 text-gray-500 shrink-0" />
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => {
-                setSelectedCategory(cat);
-                setCurrentPage(1);
-              }}
-              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                selectedCategory === cat
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              {cat === 'all' ? 'Todos' : cat}
-            </button>
-          ))}
-        </motion.div>
+        <SearchAndFilterBar
+          searchQuery={searchQuery}
+          selectedCategory={selectedCategory}
+          categories={categories}
+          onSearchChange={(value) => {
+            setSearchQuery(value);
+            setCurrentPage(1);
+          }}
+          onCategoryChange={(category) => {
+            setSelectedCategory(category);
+            setCurrentPage(1);
+          }}
+        />
 
         {filteredExpenses.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginatedExpenses.map((expense, index) => (
-                <motion.div
+                <ExpenseCard
                   key={`${expense.id}-${refreshKey}`}
-                  className="obsidian-card rounded-3xl p-5 group cursor-pointer relative"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
-                  whileHover={{ y: -4 }}
-                  onClick={() => handleCardClick(expense)}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCardClick(expense);
-                    }}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-orange-500 hover:border-orange-500/30 transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
-
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500/15 to-orange-600/5 flex items-center justify-center border border-orange-500/20 group-hover:border-orange-500/40 transition-colors">
-                      <Receipt className="w-5 h-5 text-orange-500" />
-                    </div>
-                    <span className="badge badge-emerald">Registrado</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="font-black text-white uppercase tracking-tight text-sm leading-tight pr-8">
-                      {expense.description}
-                    </p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3" />
-                      {format(new Date(expense.date), "dd 'de' MMMM, yyyy", { locale: es })}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-orange-500 font-medium">{expense.category.name}</p>
-                      {expense.items && (() => {
-                        try {
-                          const items = JSON.parse(expense.items);
-                          if (Array.isArray(items) && items.length > 0) {
-                            return (
-                              <span className="badge badge-sapphire text-[10px]">
-                                {items.length} producto{items.length !== 1 ? 's' : ''}
-                              </span>
-                            );
-                          }
-                        } catch {}
-                        return null;
-                      })()}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-2xl font-black text-white">
-                      ${expense.amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    </span>
-                    <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-orange-500 transition-colors" />
-                  </div>
-                </motion.div>
+                  expense={expense}
+                  index={index}
+                  refreshKey={refreshKey}
+                  onClick={handleCardClick}
+                />
               ))}
             </div>
 
-            {totalPages > 1 && (
-              <motion.div
-                className="flex items-center justify-center gap-2 py-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                    const isNearCurrent = Math.abs(page - currentPage) <= 1;
-                    const isFirst = page === 1;
-                    const isLast = page === totalPages;
-
-                    if (!isNearCurrent && !isFirst && !isLast) {
-                      if (page === 2 || page === totalPages - 1) {
-                        return (
-                          <span key={page} className="px-2 text-gray-500">...</span>
-                        );
-                      }
-                      return null;
-                    }
-
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                          currentPage === page
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
-                </button>
-              </motion.div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           </>
         ) : (
           <motion.div

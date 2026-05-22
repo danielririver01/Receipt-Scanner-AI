@@ -10,15 +10,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('[Token Status] Fetching for userId:', userId);
-
     const user = await prisma.users.findFirst({
       where: { clerk_id: userId },
       include: { ai_token_wallets: true, restaurants: true }
     });
 
     if (!user) {
-      console.log('[Token Status] User not found in DB, returning defaults');
       return NextResponse.json({
         is_elite: false,
         total_available: 0,
@@ -31,7 +28,6 @@ export async function GET() {
     const wallet = user.ai_token_wallets;
 
     if (!wallet) {
-      console.log('[Token Status] No wallet found for user');
       return NextResponse.json({
         is_elite: false,
         total_available: 0,

@@ -3,14 +3,7 @@
 import CategoryDonutChart from './charts/CategoryDonutChart';
 import MonthlyTrendChart from './charts/MonthlyTrendChart';
 import DailySpendingChart from './charts/DailySpendingChart';
-
-interface Expense {
-  id: string;
-  description: string;
-  date: Date;
-  amount: number;
-  category: { name: string };
-}
+import { Expense } from '@/types';
 
 interface ChartsSectionProps {
   expenses: Expense[];

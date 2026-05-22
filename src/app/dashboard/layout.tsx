@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ClerkUserButton from '@/components/ClerkUserButton';
+import TokenIndicator from '@/components/TokenBubble';
 import { LayoutDashboard, Tag, PlusCircle, Activity, ArrowLeft } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -54,10 +55,13 @@ export default function DashboardLayout({
                     </div>
                 </nav>
 
-                <div className="p-4 border-t border-white/5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <ClerkUserButton />
-                        <span className="text-sm font-medium text-gray-400">Mi Cuenta</span>
+                <div className="p-4 border-t border-white/5 space-y-3">
+                    <TokenIndicator variant="sidebar" />
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <ClerkUserButton />
+                            <span className="text-sm font-medium text-gray-400">Mi Cuenta</span>
+                        </div>
                     </div>
                 </div>
             </aside>
@@ -69,6 +73,7 @@ export default function DashboardLayout({
                     <span className="font-bold tracking-tighter">VELZIA</span>
                 </div>
                 <div className="flex items-center gap-3">
+                    <TokenIndicator variant="mobile" />
                     <a
                         href={`${VELZIA_URL}/dashboard`}
                         className="text-xs font-bold text-orange-500 border border-orange-500/30 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors"

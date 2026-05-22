@@ -1,0 +1,8 @@
+allowBuilds:
+  '@clerk/shared': false
+  '@prisma/engines': false
+  canvas: false
+  prisma: false
+  sharp: false
+  tesseract.js: false
+  unrs-resolver: false

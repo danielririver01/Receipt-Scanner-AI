@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, Variants, TargetAndTransition } from 'framer-motion';
 
 interface MotionHeaderProps {
   children: React.ReactNode;
@@ -23,7 +23,7 @@ export function MotionHeader({ children, className }: MotionHeaderProps) {
 interface MotionCardProps {
   children: React.ReactNode;
   className?: string;
-  variants?: Record<string, unknown>;
+  variants?: Variants;
   style?: React.CSSProperties;
 }
 
@@ -42,8 +42,8 @@ export function MotionCard({ children, className, variants, style }: MotionCardP
 interface MotionSectionProps {
   children: React.ReactNode;
   className?: string;
-  initial?: Record<string, unknown>;
-  animate?: Record<string, unknown>;
+  initial?: TargetAndTransition;
+  animate?: TargetAndTransition;
   transition?: Record<string, unknown>;
 }
 

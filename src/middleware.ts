@@ -21,7 +21,7 @@ export default clerkMiddleware(async (auth, request) => {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/sign-up')) {
-    return NextResponse.redirect(FLASK_REGISTER_URL);
+    return NextResponse.redirect(`${FLASK_REGISTER_URL}?plan=trial`);
   }
 
   if (!isPublicRoute(request)) {
