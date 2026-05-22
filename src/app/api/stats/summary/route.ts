@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || 'today';
 
-    const expenses = await prisma.velzia_expense.aggregate({
+    const expenses = await prisma.expense.aggregate({
       where: {
         userId,
       },

@@ -8,7 +8,7 @@ export async function createCategory(name: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-const category = await prisma.velzia_category.create({
+const category = await prisma.category.create({
       data: {
         name,
         userId,
@@ -25,7 +25,7 @@ export async function deleteCategory(id: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  await prisma.velzia_category.delete({
+  await prisma.category.delete({
     where: { id, userId }
   });
 
@@ -36,7 +36,7 @@ export async function updateCategory(id: string, name: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  const category = await prisma.velzia_category.update({
+  const category = await prisma.category.update({
     where: { id, userId },
     data: { name },
     select: { id: true, name: true }
@@ -54,7 +54,7 @@ export async function setBudget(categoryId: string, amount: number) {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const budget = await prisma.velzia_budget.upsert({
+  const budget = await prisma.budget.upsert({
     where: {
       categoryId_month_year: {
         categoryId,

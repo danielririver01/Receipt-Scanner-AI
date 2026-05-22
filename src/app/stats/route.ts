@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const expenses = await prisma.velzia_expense.aggregate({
+  const expenses = await prisma.expense.aggregate({
     where: { userId },
     _sum: { amount: true },
   });

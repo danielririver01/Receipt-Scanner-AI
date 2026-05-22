@@ -8,7 +8,7 @@ export async function GET() {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const expenses = await prisma.velzia_expense.findMany({
+  const expenses = await prisma.expense.findMany({
     where: { userId },
     include: { category: true },
     orderBy: { date: 'desc' }

@@ -67,7 +67,7 @@ function calculateConfidence(structuredData: StructuredData): ConfidenceScores {
 }
 
 export async function getCategoriesForUser(userId: string): Promise<string[]> {
-  const categories = await prisma.velzia_category.findMany({
+  const categories = await prisma.category.findMany({
     where: { userId },
     select: { name: true }
   });

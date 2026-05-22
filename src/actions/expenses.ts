@@ -18,17 +18,17 @@ export async function saveExpense(data: {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  let category = await prisma.velzia_category.findFirst({
+  let category = await prisma.category.findFirst({
     where: { name: data.categoryName, userId }
   });
 
   if (!category) {
-    category = await prisma.velzia_category.create({
+    category = await prisma.category.create({
       data: { name: data.categoryName, userId, updatedAt: new Date() }
     });
   }
 
-  const expense = await prisma.velzia_expense.create({
+  const expense = await prisma.expense.create({
     data: {
       amount: data.amount,
       amountConfidence: data.amountConfidence || null,
@@ -60,17 +60,17 @@ export async function updateExpense(data: {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  let category = await prisma.velzia_category.findFirst({
+  let category = await prisma.category.findFirst({
     where: { name: data.categoryName, userId }
   });
 
   if (!category) {
-    category = await prisma.velzia_category.create({
+    category = await prisma.category.create({
       data: { name: data.categoryName, userId, updatedAt: new Date() }
     });
   }
 
-  const expense = await prisma.velzia_expense.update({
+  const expense = await prisma.expense.update({
     where: { id: data.id, userId },
     data: {
       amount: data.amount,
@@ -91,7 +91,7 @@ export async function deleteExpense(id: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  await prisma.velzia_expense.delete({
+  await prisma.expense.delete({
     where: { id, userId }
   });
 

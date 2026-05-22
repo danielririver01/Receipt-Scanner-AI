@@ -22,7 +22,7 @@ export default async function CategoriesPage() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const categories = await prisma.velzia_category.findMany({
+  const categories = await prisma.category.findMany({
     where: { userId },
     include: {
       budget: {

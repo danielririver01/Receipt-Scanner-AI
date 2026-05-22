@@ -37,24 +37,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
   const year = params.year ? parseInt(params.year) : now.getFullYear();
 
-  const expenses = await prisma.velzia_expense.findMany({
+  const expenses = await prisma.expense.findMany({
     where: { userId },
     include: { category: true },
     orderBy: { date: 'desc' },
   });
 
   const sixMonthsAgo = new Date(year, month - 7, 1);
-  const monthlyExpenses = await prisma.velzia_expense.findMany({
+  const monthlyExpenses = await prisma.expense.findMany({
     where: { userId, date: { gte: sixMonthsAgo } },
     include: { category: true },
   });
 
-  const budgets = await prisma.velzia_budget.findMany({
+  const budgets = await prisma.budget.findMany({
     where: { userId },
     include: { category: true },
   });
 
-  const totalExpensesCount = await prisma.velzia_expense.count({ where: { userId } });
+  const totalExpensesCount = await prisma.expense.count({ where: { userId } });
 
   return (
     <DashboardContent

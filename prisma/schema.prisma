@@ -38,17 +38,18 @@ model alembic_version {
 }
 
 model budget {
-  id         String   @id
+  id         String   @id @default(cuid())
   amount     Float
   categoryId String
   userId     String
   month      Int
   year       Int
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @default(now())
   category   category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Budget_categoryId_fkey")
 
   @@unique([categoryId, month, year], map: "Budget_categoryId_month_year_key")
+  @@map("velzia_budget")
 }
 
 model categories {
@@ -68,19 +69,20 @@ model categories {
 }
 
 model category {
-  id        String    @id
+  id        String   @id @default(cuid())
   name      String
   userId    String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
   budget    budget[]
   expense   expense[]
 
   @@unique([name, userId], map: "Category_name_userId_key")
+  @@map("velzia_category")
 }
 
 model expense {
-  id               String   @id
+  id               String   @id @default(cuid())
   amount           Float
   amountConfidence Float?
   description      String
@@ -92,10 +94,11 @@ model expense {
   items            String?  @db.Text
   itemsConfidence  Float?
   createdAt        DateTime @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @default(now())
   category         category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Expense_categoryId_fkey")
 
   @@index([categoryId], map: "Expense_categoryId_fkey")
+  @@map("velzia_expense")
 }
 
 model modifiers {
