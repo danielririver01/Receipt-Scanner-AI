@@ -11,9 +11,11 @@ export type RechargeModalProps = {
 
 export default function TokenRechargeModal({ isOpen, onClose }: RechargeModalProps) {
   const [loadingPack, setLoadingPack] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRecharge = async (packId: string) => {
     setLoadingPack(packId);
+    setError(null);
     
     try {
       const apiPack = packId === 'basic' ? '5k' : '10k';
@@ -31,12 +33,10 @@ export default function TokenRechargeModal({ isOpen, onClose }: RechargeModalPro
       if (data.checkout_url) {
         window.open(data.checkout_url, '_blank');
       } else {
-        console.error('No se recibió checkout_url', data);
-        alert('Hubo un error al generar el pago. Intenta de nuevo.');
+        setError(data.error || 'Hubo un error al generar el pago. Intenta de nuevo.');
       }
     } catch (error) {
-      console.error('Error procesando checkout:', error);
-      alert('Error de conexión al procesar el pago.');
+      setError('Error de conexión al procesar el pago.');
     } finally {
       setLoadingPack(null);
     }
@@ -136,6 +136,15 @@ export default function TokenRechargeModal({ isOpen, onClose }: RechargeModalPro
                 )}
               </button>
             </div>
+
+            {/* Error */}
+            {error && (
+              <div className="px-6 pt-4">
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                  <span className="text-red-400 text-sm leading-relaxed">{error}</span>
+                </div>
+              </div>
+            )}
 
             {/* Footer Section */}
             <div className="p-6 pt-8 space-y-6">
