@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { savePriceHistory } from './priceHistory';
 
 export async function saveExpense(data: {
   amount: number;
@@ -43,6 +44,12 @@ export async function saveExpense(data: {
       updatedAt: new Date()
     }
   });
+
+  if (data.items) {
+    const parsedItems: Array<{ name: string; price: number; quantity?: number; unit?: string }> =
+      JSON.parse(data.items);
+    await savePriceHistory(userId, expense.id, data.description, data.date, parsedItems);
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/activity');

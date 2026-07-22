@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 
+export const dynamic = 'force-dynamic';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
   title: "Velzia",
   description: "Gestión de nivel superior para restauranteros que valoran la eficiencia y el control absoluto.",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/favicon-robot-chef.png",
   },
 };
 

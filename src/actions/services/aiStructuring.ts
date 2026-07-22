@@ -6,7 +6,7 @@ export interface StructuredData {
   date: string;
   category: string;
   description: string;
-  items: Array<{ name: string; price: number }>;
+  items: Array<{ name: string; price: number; quantity?: number; unit?: string }>;
 }
 
 export interface ConfidenceScores {
@@ -24,7 +24,7 @@ function buildSystemPrompt(categoryNames: string[]): string {
 - date: fecha en formato YYYY-MM-DD
 - category: una de estas categorías EXACTAMENTE: ${categoryNames.join(', ')}
 - description: descripción breve del gasto
-- items: ARRAY de productos del ticket, cada uno con "name" (nombre del producto) y "price" (precio individual). EJEMPLO: [{"name": "Hamburguesa", "price": 15000}, {"name": "Gaseosa", "price": 5000}]. Extrae TODOS los productos que puedas identificar.
+- items: ARRAY de productos del ticket. Cada producto con "name" (nombre), "price" (precio individual), "quantity" (cantidad numérica del empaque, ej. 1 o 500) y "unit" (unidad: "kg", "g", "l", "ml" o "ud"). EJEMPLO: [{"name":"Arroz","price":5000,"quantity":1,"unit":"kg"},{"name":"Leche","price":3000,"quantity":500,"unit":"g"}]. Si no aparece la cantidad/envasado, omite "quantity" y "unit". Extrae TODOS los productos que puedas identificar.
 
 IMPORTANTE: La categoría debe ser exactamente una de las listadas. Si no puedes identificar productos, usa un array vacío "items": [].`;
   }
@@ -35,7 +35,7 @@ IMPORTANTE: La categoría debe ser exactamente una de las listadas. Si no puedes
 - date: fecha en formato YYYY-MM-DD
 - category: usa "Otros"
 - description: descripción breve del gasto
-- items: ARRAY de productos del ticket, cada uno con "name" y "price". EJEMPLO: [{"name": "Producto 1", "price": 5000}, {"name": "Producto 2", "price": 8000}]`;
+- items: ARRAY de productos del ticket, cada uno con "name", "price", "quantity" (cantidad del empaque) y "unit" ("kg","g","l","ml","ud"). EJEMPLO: [{"name":"Producto 1","price":5000,"quantity":1,"unit":"kg"},{"name":"Producto 2","price":8000,"quantity":500,"unit":"g"}]. Si no hay cantidad, omite "quantity"/"unit".`;
 }
 
 function calculateConfidence(structuredData: StructuredData): ConfidenceScores {

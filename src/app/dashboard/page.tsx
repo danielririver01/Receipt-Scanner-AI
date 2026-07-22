@@ -1,9 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
-const DashboardContent = dynamic(() => import('@/components/DashboardContent'), {
+export const dynamic = 'force-dynamic';
+
+const DashboardContent = dynamicImport(() => import('@/components/DashboardContent'), {
   loading: () => (
     <div className="space-y-10 animate-pulse">
       <div className="h-12 w-64 bg-white/5 rounded"></div>

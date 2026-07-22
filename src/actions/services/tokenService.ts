@@ -11,7 +11,6 @@ export async function consumeToken(clerkId: string) {
       throw new Error('Usuario no encontrado');
     }
 
-    const wallet = user.ai_token_wallets;
     const isElite = user.restaurants?.plan_type === 'elite';
 
     if (isElite) {
@@ -27,37 +26,53 @@ export async function consumeToken(clerkId: string) {
       return { success: true, tokens_remaining: 300, is_elite: true };
     }
 
-    const totalAvailable = wallet.plan_tokens + wallet.extra_tokens;
-    if (totalAvailable <= 0) {
-      throw new Error('Tokens insuficientes. Por favor, recarga en el Dashboard de Velzia.');
-    }
-
-    if (wallet.plan_tokens > 0) {
-      await prisma.ai_token_wallets.update({
-        where: { user_id: user.id },
-        data: { plan_tokens: { decrement: 1 }, tokens_used_month: { increment: 1 } }
+    const result = await prisma.$transaction(async (tx) => {
+      // Leer el wallet dentro de la transacción para evitar TOCTOU.
+      // Si dos requests concurrentes llegan, una espera a que la otra
+      // termine gracias al aislamiento de Prisma/MySQL.
+      const wallet = await tx.ai_token_wallets.findUnique({
+        where: { user_id: user.id }
       });
-    } else {
-      await prisma.ai_token_wallets.update({
-        where: { user_id: user.id },
-        data: { extra_tokens: { decrement: 1 }, tokens_used_month: { increment: 1 } }
-      });
-    }
 
-    await prisma.ai_token_transactions.create({
-      data: {
-        user_id: user.id,
-        type: 'consume',
-        amount: -1,
-        source: 'scanner_ia',
-        description: 'OCR scan consumir'
+      if (!wallet) {
+        throw new Error('Wallet no encontrado');
       }
+
+      const totalAvailable = wallet.plan_tokens + wallet.extra_tokens;
+      if (totalAvailable <= 0) {
+        throw new Error('Tokens insuficientes. Por favor, recarga en el Dashboard de Velzia.');
+      }
+
+      if (wallet.plan_tokens > 0) {
+        await tx.ai_token_wallets.update({
+          where: { user_id: user.id },
+          data: { plan_tokens: { decrement: 1 }, tokens_used_month: { increment: 1 } }
+        });
+      } else {
+        await tx.ai_token_wallets.update({
+          where: { user_id: user.id },
+          data: { extra_tokens: { decrement: 1 }, tokens_used_month: { increment: 1 } }
+        });
+      }
+
+      await tx.ai_token_transactions.create({
+        data: {
+          user_id: user.id,
+          type: 'consume',
+          amount: -1,
+          source: 'scanner_ia',
+          description: 'OCR scan consumir'
+        }
+      });
+
+      const updated = await tx.ai_token_wallets.findUnique({
+        where: { user_id: user.id }
+      });
+
+      return (updated?.plan_tokens || 0) + (updated?.extra_tokens || 0);
     });
 
-    const updatedWallet = await prisma.ai_token_wallets.findUnique({ where: { user_id: user.id } });
-    const remaining = (updatedWallet?.plan_tokens || 0) + (updatedWallet?.extra_tokens || 0);
-
-    return { success: true, tokens_remaining: remaining };
+    return { success: true, tokens_remaining: result };
   } catch (error: any) {
     console.error('[OCR] Error in consumeToken:', error);
     throw error;
@@ -79,27 +94,34 @@ export async function refundToken(clerkId: string) {
     const isElite = user.restaurants?.plan_type === 'elite';
     if (isElite) return;
 
-    const wallet = user.ai_token_wallets;
-    if (wallet.plan_tokens < (wallet.plan_limit ?? 0)) {
-      await prisma.ai_token_wallets.update({
-        where: { user_id: user.id },
-        data: { plan_tokens: { increment: 1 }, tokens_used_month: { decrement: 1 } }
+    await prisma.$transaction(async (tx) => {
+      const wallet = await tx.ai_token_wallets.findUnique({
+        where: { user_id: user.id }
       });
-    } else {
-      await prisma.ai_token_wallets.update({
-        where: { user_id: user.id },
-        data: { extra_tokens: { increment: 1 }, tokens_used_month: { decrement: 1 } }
-      });
-    }
 
-    await prisma.ai_token_transactions.create({
-      data: {
-        user_id: user.id,
-        type: 'refund',
-        amount: 1,
-        source: 'scanner_ia',
-        description: 'OCR scan reembolso'
+      if (!wallet) return;
+
+      if (wallet.plan_tokens < (wallet.plan_limit ?? 0)) {
+        await tx.ai_token_wallets.update({
+          where: { user_id: user.id },
+          data: { plan_tokens: { increment: 1 }, tokens_used_month: { decrement: 1 } }
+        });
+      } else {
+        await tx.ai_token_wallets.update({
+          where: { user_id: user.id },
+          data: { extra_tokens: { increment: 1 }, tokens_used_month: { decrement: 1 } }
+        });
       }
+
+      await tx.ai_token_transactions.create({
+        data: {
+          user_id: user.id,
+          type: 'refund',
+          amount: 1,
+          source: 'scanner_ia',
+          description: 'OCR scan reembolso'
+        }
+      });
     });
   } catch (e) {
     console.error('Error procesando reembolso:', e);

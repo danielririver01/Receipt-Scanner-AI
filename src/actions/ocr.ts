@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { consumeToken, refundToken } from './services/tokenService';
 import { extractTextWithGoogleVision } from './services/ocrService';
 import { getCategoriesForUser, structureWithDeepSeek } from './services/aiStructuring';
+import { getPurchaseFindings } from './priceHistory';
 
 export async function processReceipt(formData: FormData) {
   const { userId, getToken } = await auth();
@@ -44,12 +45,17 @@ export async function processReceipt(formData: FormData) {
 
     const { data: structuredData, confidence } = await structureWithDeepSeek(text, categoryNames);
 
+    const findings = structuredData.items && structuredData.items.length > 0
+      ? await getPurchaseFindings(userId, structuredData.items, structuredData.merchant)
+      : null;
+
     return {
       ...structuredData,
       ocrText: text,
       imageUrl,
       amountConfidence: confidence.amountConfidence,
-      itemsConfidence: confidence.itemsConfidence
+      itemsConfidence: confidence.itemsConfidence,
+      findings,
     };
 
   } catch (error: any) {

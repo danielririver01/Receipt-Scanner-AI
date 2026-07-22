@@ -1,18 +1,34 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { ratelimit, getRateLimitHeaders } from '@/lib/rateLimiter';
 
 export async function POST(request: Request) {
   try {
     const { userId } = await auth();
-    const user = await currentUser();
-    
-    if (!userId || !user) {
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const email = user.emailAddresses[0]?.emailAddress;
+    const limitKey = `user:${userId}`
+    const { success, remaining, reset } = await ratelimit(limitKey)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: { 'Retry-After': '60', ...getRateLimitHeaders(remaining, reset) } }
+      )
+    }
+
+    // El email se obtiene de la base de datos (igual que /api/tokens/status),
+    // evitando depender de currentUser() de Clerk, que puede fallar en el cliente.
+    const dbUser = await prisma.users.findFirst({
+      where: { clerk_id: userId }
+    });
+    const email = dbUser?.email ?? null;
+
     const body = await request.json();
-    const pack = body.pack || '5k'; // 5k o 10k
+    const pack = body.pack || '25'; // 25, 50 o 100
 
     // Orderfox Backend URL (Flask)
     const ORDERFOX_URL = process.env.ORDERFOX_URL || 'http://127.0.0.1:5000';

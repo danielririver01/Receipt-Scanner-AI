@@ -119,7 +119,8 @@ export default function CategoriesWrapper({ initialCategories }: { initialCatego
   };
 
   const handleUpdateBudget = async (categoryId: string) => {
-    const amount = parseFloat(editBudgetAmount);
+    const sanitized = editBudgetAmount.replace(/\./g, '').replace(',', '.');
+    const amount = parseFloat(sanitized);
     if (isNaN(amount)) return;
     
     try {

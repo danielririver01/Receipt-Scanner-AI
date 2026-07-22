@@ -1,8 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Loader2, RefreshCcw, Send } from 'lucide-react';
-import { Item } from '@/types';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, RefreshCcw, Send, History } from 'lucide-react';
+import { Item, PurchaseFindingsResult } from '@/types';
+import FindingsCard from '@/components/FindingsCard';
+import ProductHistoryModal from '@/components/ProductHistoryModal';
 
 interface ScannerReviewProps {
   result: {
@@ -13,6 +16,7 @@ interface ScannerReviewProps {
     imageUrl: string;
     items: Item[];
     itemsConfidence: number;
+    findings?: PurchaseFindingsResult;
   };
   loading: boolean;
   onUpdateResult: (updates: Partial<ScannerReviewProps['result']>) => void;
@@ -42,6 +46,8 @@ export default function ScannerReview({
 
   const itemsTotal = result.items.reduce((sum, i) => sum + i.price, 0);
   const amountDiff = Math.abs(itemsTotal - result.amount);
+
+  const [historyProduct, setHistoryProduct] = useState<string | null>(null);
 
   return (
     <motion.div 
@@ -84,7 +90,10 @@ export default function ScannerReview({
               <input
                 type="number"
                 value={result.amount}
-                onChange={(e) => onUpdateResult({ amount: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => {
+  const val = e.target.value.replace(/\./g, '').replace(',', '.');
+  onUpdateResult({ amount: parseFloat(val) || 0 });
+}}
                 className="w-full bg-[#1a1a1a] border border-white/5 rounded-2xl pl-10 pr-5 py-4 text-white font-black text-xl focus:outline-none focus:border-orange-500/50 transition-all focus:bg-black [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
@@ -120,6 +129,14 @@ export default function ScannerReview({
             <div className="bg-white/5 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto">
               {result.items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryProduct(item.name)}
+                    title="Ver historial de precio"
+                    className="shrink-0 p-1.5 rounded-lg text-gray-600 hover:text-violet-300 hover:bg-violet-500/10 transition-colors"
+                  >
+                    <History size={14} />
+                  </button>
                   <input
                     type="text"
                     value={item.name}
@@ -130,7 +147,10 @@ export default function ScannerReview({
                   <input
                     type="number"
                     value={item.price}
-                    onChange={(e) => handleItemPriceChange(idx, parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+  const val = e.target.value.replace(/\./g, '').replace(',', '.');
+  handleItemPriceChange(idx, parseFloat(val) || 0);
+}}
                     className="w-24 bg-white/10 rounded-lg px-2 py-1 text-white text-sm font-bold text-right focus:outline-none focus:border-orange-500/50 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0"
                   />
@@ -147,6 +167,10 @@ export default function ScannerReview({
         )}
       </div>
 
+      {result.findings && (
+        <FindingsCard result={result.findings} />
+      )}
+
       <button
         onClick={onSave}
         disabled={loading}
@@ -155,6 +179,12 @@ export default function ScannerReview({
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send size={16} />}
         Confirmar y Guardar Registro
       </button>
+
+      <AnimatePresence>
+        {historyProduct && (
+          <ProductHistoryModal productName={historyProduct} onClose={() => setHistoryProduct(null)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

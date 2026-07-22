@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { startOfDay, startOfMonth } from 'date-fns';
+import { ratelimit, getRateLimitHeaders } from '@/lib/rateLimiter';
 
 function setCorsHeaders(res: NextResponse, req: Request) {
   const origin = req.headers.get('origin') || '*';
@@ -36,6 +37,18 @@ export async function GET(request: Request) {
 
     if (!userId) {
       return setCorsHeaders(NextResponse.json({ error: 'Unauthorized - no userId' }, { status: 401 }), request);
+    }
+
+    const limitKey = `user:${userId}`
+    const { success, remaining, reset } = await ratelimit(limitKey)
+    if (!success) {
+      return setCorsHeaders(
+        NextResponse.json(
+          { error: 'Too many requests' },
+          { status: 429, headers: { 'Retry-After': '60', ...getRateLimitHeaders(remaining, reset) } }
+        ),
+        request
+      )
     }
 
     const { searchParams } = new URL(request.url);

@@ -40,7 +40,7 @@ export default function RecentExpensesList({ expenses }: RecentExpensesListProps
           <div className="flex-1 min-w-0">
             <p className="font-bold truncate text-white uppercase tracking-tight text-sm">{expense.description}</p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {format(new Date(expense.date), "dd MMM", { locale: es })} • {expense.category.name}
+              {format(new Date(new Date(expense.date).getUTCFullYear(), new Date(expense.date).getUTCMonth(), new Date(expense.date).getUTCDate()), "dd MMM", { locale: es })} • {expense.category.name}
             </p>
           </div>
           <div className="text-right">

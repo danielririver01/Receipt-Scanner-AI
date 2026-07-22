@@ -23,17 +23,25 @@ export async function POST(request: NextRequest) {
 
     // 2. Verificar que el usuario existe en Clerk
     const clerk = await clerkClient();
+    let clerkUser;
     try {
-      await clerk.users.getUser(decoded.clerk_id);
+      clerkUser = await clerk.users.getUser(decoded.clerk_id);
     } catch {
       return NextResponse.json({ error: 'Usuario no encontrado en Clerk' }, { status: 404 });
     }
 
-    // 3. Retornar datos para que el frontend redirija al Sign-In pre-llenado
+    // 3. Crear un sign-in token de Clerk (one-time, 60s)
+    const signInToken = await clerk.signInTokens.createSignInToken({
+      userId: clerkUser.id,
+      expiresInSeconds: 60,
+    });
+
+    // 3. Retornar el token para redirigir al sign-in con ticket
     return NextResponse.json({
       success: true,
+      sign_in_token: signInToken.id,
+      redirect_url: `/sign-in#ticket=${signInToken.id}`,
       clerk_id: decoded.clerk_id,
-      email: decoded.email,
     });
   } catch (error: any) {
     console.error('Flask token auth error:', error);

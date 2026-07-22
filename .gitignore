@@ -49,3 +49,6 @@ dev.db-journal
 
 # uploads
 /public/uploads
+
+# pnpm store
+.pnpm-store/

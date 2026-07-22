@@ -104,8 +104,11 @@ export default function ReceiptScanner() {
     if (!result) return;
     setLoading(true);
     try {
+      const itemsTotal = result.items && result.items.length > 0
+        ? result.items.reduce((acc, i) => acc + (i.price || 0), 0)
+        : 0;
       await saveExpense({
-        amount: result.amount,
+        amount: itemsTotal > 0 ? itemsTotal : result.amount,
         description: result.merchant || result.description,
         date: result.date,
         categoryName: result.category,

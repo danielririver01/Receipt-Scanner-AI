@@ -12,7 +12,7 @@ model ai_token_transactions {
   type          String    @db.VarChar(20)
   amount        Int
   source        String    @db.VarChar(50)
-  mp_payment_id String?   @db.VarChar(100)
+  mp_payment_id String?   @unique @db.VarChar(100)
   description   String?   @db.VarChar(200)
   created_at    DateTime? @db.DateTime(0)
   users         users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "ai_token_transactions_ibfk_1")
@@ -81,6 +81,24 @@ model category {
   @@map("velzia_category")
 }
 
+model price_history {
+  id           String   @id @default(cuid())
+  userId       String
+  productName  String
+  price        Float
+  unit         String?
+  quantity     Float?
+  normPrice    Float?
+  normBase     String?
+  merchant     String?
+  date         DateTime
+  expenseId    String
+  createdAt    DateTime @default(now())
+
+  @@index([userId, productName])
+  @@map("velzia_price_history")
+}
+
 model expense {
   id               String   @id @default(cuid())
   amount           Float
@@ -90,7 +108,7 @@ model expense {
   categoryId       String
   userId           String
   receiptUrl       String?
-  ocrText          String?
+  ocrText          String?  @db.Text
   items            String?  @db.Text
   itemsConfidence  Float?
   createdAt        DateTime @default(now())
@@ -143,15 +161,17 @@ model orders {
   status         String        @db.VarChar(20)
   total          Int
   notes          String?       @db.Text
+  ip_address     String?       @db.VarChar(45)
+  expires_at     DateTime?     @db.DateTime(0)
   created_at     DateTime?     @db.DateTime(0)
   updated_at     DateTime?     @db.DateTime(0)
-  expires_at     DateTime?     @db.DateTime(0)
   order_items    order_items[]
   restaurants    restaurants   @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "orders_ibfk_1")
   tables         tables?       @relation(fields: [table_id], references: [id], onUpdate: Restrict, map: "orders_ibfk_2")
 
   @@index([restaurant_id], map: "orders_ibfk_1")
   @@index([table_id], map: "orders_ibfk_2")
+  @@index([ip_address], map: "ix_orders_ip_address")
 }
 
 model products {
@@ -162,7 +182,6 @@ model products {
   description    String?     @db.Text
   price          Int
   is_active      Boolean
-  is_highlighted Boolean
   image_url      String?     @db.VarChar(255)
   created_at     DateTime?   @db.DateTime(0)
   updated_at     DateTime?   @db.DateTime(0)
@@ -184,8 +203,9 @@ model restaurants {
   is_active               Boolean
   is_open                 Boolean
   has_used_trial          Boolean
+  ntfy_topic              String?       @unique @db.VarChar(64)
   created_at              DateTime?     @db.DateTime(0)
-  pending_expiry_hours    Int?
+  pending_expiry_hours    Int
   categories              categories[]
   modifiers               modifiers[]
   order_items             order_items[]

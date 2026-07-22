@@ -2,22 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth, useSignIn } from '@clerk/nextjs';
 
 export default function FlaskAuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoaded, isSignedIn } = useAuth();
-  const { isLoaded: signInLoaded, signIn } = useSignIn();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
 
   useEffect(() => {
-    if (!isLoaded || !signInLoaded) return;
-
-    if (isSignedIn) {
-      router.push('/dashboard');
-      return;
-    }
 
     const flaskToken = searchParams.get('flask_token');
     if (!flaskToken) {
@@ -35,18 +26,14 @@ export default function FlaskAuthContent() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        const result = await signIn.create({
-          identifier: data.email,
-          strategy: 'email_code',
-        });
-
-        router.push(`/sign-in?redirect_url=/dashboard&email=${encodeURIComponent(data.email)}`);
+        // Redirigir a Clerk sign-in con el ticket (autenticación automática)
+        router.push(data.redirect_url);
       })
       .catch(() => {
         setStatus('error');
         setTimeout(() => router.push('/sign-in'), 2000);
       });
-  }, [isLoaded, isSignedIn, signInLoaded, signIn, searchParams, router]);
+  }, [searchParams, router]);
 
   if (status === 'error') {
     return (

@@ -48,7 +48,7 @@ export default function ExpenseCard({ expense, index, refreshKey, onClick }: Exp
         </p>
         <p className="text-xs text-gray-500 flex items-center gap-1.5">
           <Calendar className="w-3 h-3" />
-          {format(new Date(expense.date), "dd 'de' MMMM, yyyy", { locale: es })}
+          {format(new Date(new Date(expense.date).getUTCFullYear(), new Date(expense.date).getUTCMonth(), new Date(expense.date).getUTCDate()), "dd 'de' MMMM, yyyy", { locale: es })}
         </p>
         <div className="flex items-center gap-2">
           <p className="text-xs text-orange-500 font-medium">{expense.category.name}</p>

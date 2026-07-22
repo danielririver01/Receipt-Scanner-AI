@@ -1,8 +1,10 @@
 import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
-const RecentActivityClient = dynamic(() => import('@/components/RecentActivityClient'), {
+export const dynamic = 'force-dynamic';
+
+const RecentActivityClient = dynamicImport(() => import('@/components/RecentActivityClient'), {
   loading: () => (
     <div className="min-h-screen pb-20 animate-pulse">
       <div className="h-16 bg-white/5 rounded"></div>

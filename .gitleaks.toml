@@ -1,0 +1,15 @@
+title = "Receipt-Scanner-AI Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+    '''.*\.git/.*''',
+    '''node_modules/.*''',
+    '''\.next/.*''',
+    '''\.pnpm-store/.*''',
+    '''\.clerk/.*''',
+    '''tests/security/.*''',
+    '''prisma/migrations/.*''',
+]

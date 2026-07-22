@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import LandingHeader from '@/components/LandingHeader';
 
+export const dynamic = 'force-dynamic';
+
 export default async function LandingPage() {
   const { userId } = await auth();
 

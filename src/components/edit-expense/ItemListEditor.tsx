@@ -85,7 +85,10 @@ export default function ItemListEditor({
                     type="number"
                     placeholder="0"
                     value={item.price || ''}
-                    onChange={(e) => onUpdateItem(index, 'price', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+  const val = e.target.value.replace(/\./g, '').replace(',', '.');
+  onUpdateItem(index, 'price', parseFloat(val) || 0);
+}}
                     className="w-20 bg-white/5 rounded-lg px-2 py-1 text-white text-sm font-bold text-right focus:outline-none focus:border-orange-500/50"
                   />
                 </div>

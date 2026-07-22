@@ -85,10 +85,13 @@ export default function EditExpenseModal({
 
     setLoading(true);
     try {
+      const itemsTotal = items.length > 0
+        ? items.reduce((sum, item) => sum + (item.price || 0), 0)
+        : 0;
       await updateExpense({
         id: expense.id,
         description: form.description,
-        amount: parseFloat(form.amount),
+        amount: itemsTotal > 0 ? itemsTotal : parseFloat(form.amount),
         date: form.date,
         categoryName: form.categoryName,
         items: items.length > 0 ? JSON.stringify(items) : undefined,

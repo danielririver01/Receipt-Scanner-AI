@@ -1,13 +1,23 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { ratelimit, getRateLimitHeaders } from '@/lib/rateLimiter';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const limitKey = `user:${userId}`
+    const { success, remaining, reset } = await ratelimit(limitKey)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: { 'Retry-After': '60', ...getRateLimitHeaders(remaining, reset) } }
+      )
     }
 
     const user = await prisma.users.findFirst({
