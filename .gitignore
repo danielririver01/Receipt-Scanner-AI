@@ -52,3 +52,6 @@ dev.db-journal
 
 # pnpm store
 .pnpm-store/
+
+# security reports (pueden contener secrets)
+tests/security/reports/
