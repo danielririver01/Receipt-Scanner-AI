@@ -55,3 +55,6 @@ dev.db-journal
 
 # security reports (pueden contener secrets)
 tests/security/reports/
+
+# clerk (puede contener claves)
+.clerk/
